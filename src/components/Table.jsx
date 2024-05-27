@@ -31,6 +31,10 @@ export default function Table() {
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+  const [outTime, setOutTime] = useState("");
+  const [remarks, setRemarks] = useState("");
 
   const openModal = () => setIsOpen(true);
   const closeModal = () => {
@@ -57,6 +61,11 @@ export default function Table() {
       setToken(response.data.accessToken);
       const decode = jwtDecode(response.data.accessToken);
       setLocationCode(decode.locationCode);
+
+      if (decode.exp * 1000 < Date.now()) {
+        navigate("/");
+        return null;
+      }
       return response.data.accessToken;
     } catch (error) {
       if (error.response) {
@@ -69,9 +78,7 @@ export default function Table() {
     async (accessToken) => {
       try {
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getAllOverNight?limit=${limit}&location=${locationCode}&page=${pages}&keyword=${search}&startDate=${
-            startDateFormat || ""
-          }&endDate=${endDateFormat || ""}`,
+          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationCode}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -125,18 +132,24 @@ export default function Table() {
   const handleExport = async () => {
     if (locationCode) {
       try {
-        setIsLoading(true); // Memulai loading sebelum mengambil data
+        setIsLoading(true);
+        const newToken = await refreshToken();
+        const decode = jwtDecode(token);
         const response = await axios.get(
           `https://dev-valetapi.skyparking.online/api/exportDataOn?LocationCode=${
             locationCode ? locationCode : ""
           }`,
-          { responseType: "arraybuffer" } // Mengatur responseType sebagai arraybuffer
+          {
+            responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+            },
+          }
         );
-        // Membuat link untuk mengunduh file
         const downloadUrl = window.URL.createObjectURL(
           new Blob([response.data])
         );
-        const fileName = `${locationCode}_alldata.xlsx`;
+        const fileName = `${decode.locationName}_alldata.xlsx`;
         const link = document.createElement("a");
         link.href = downloadUrl;
         link.setAttribute("download", fileName);
@@ -197,12 +210,14 @@ export default function Table() {
       formData.append("file", file);
 
       try {
+        const newToken = await refreshToken(); // Refresh token before upload
+
         const response = await axios.post(
           `https://dev-valetapi.skyparking.online/api/upload/dataOverNight?locationCode=${locationCode}`,
           formData,
           {
             headers: {
-              Authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${newToken}`, // Use new token here
               "Content-Type": "multipart/form-data",
             },
             onUploadProgress: (progressEvent) => {
@@ -219,7 +234,7 @@ export default function Table() {
           toast.success("File uploaded successfully!", {
             position: "top-right",
           });
-          await getData();
+          await getData(newToken); // Pass the new token to getData
           closeModal();
         } else {
           setIsLoading(false);
@@ -260,6 +275,66 @@ export default function Table() {
     saveAs(data, "Template.xlsx");
   };
 
+  const handleRowClick = (row) => {
+    setSelectedRow(row);
+    setOutTime(
+      row.OutTime
+        ? DateTime.fromISO(row.OutTime).toFormat("yyyy-MM-dd'T'HH:mm")
+        : ""
+    );
+    setRemarks(row.Remarks || "");
+    setIsModalOpen(true);
+  };
+
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setSelectedRow(null);
+  };
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      const newToken = await refreshToken();
+      const decode = jwtDecode(newToken);
+
+      const requestBody = {
+        outTime: outTime,
+        remaks: remarks,
+        officer: decode.name,
+        idTransaction: selectedRow.Id,
+      };
+
+      const response = await axios.put(
+        "https://dev-valetapi.skyparking.online/api/updateOutAndRemaks",
+        requestBody, // Mengirim request body secara langsung
+        {
+          headers: {
+            Authorization: `Bearer ${newToken}`, // Menyertakan token dalam header
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        toast.success("Data updated successfully!", {
+          position: "top-right",
+        });
+      } else {
+        toast.error("Failed to update data. Please try again.", {
+          position: "top-right",
+        });
+      }
+      await getData(newToken);
+      setIsLoading(false);
+      handleModalClose();
+    } catch (error) {
+      setIsLoading(false);
+      toast.error("An error occurred during update. Please try again.", {
+        position: "top-right",
+      });
+      console.error("Error updating data:", error);
+    }
+  };
+
   return (
     <div>
       <ToastContainer />
@@ -293,10 +368,6 @@ export default function Table() {
             <LuUploadCloud />
             <p>Upload</p>
           </button>
-          {/* <LocationList
-            data={locationData}
-            onSelectLocation={(locCode) => setSelectLocation(locCode)}
-          /> */}
           <RangeDate
             startDate={startDate}
             endDate={endDate}
@@ -327,7 +398,7 @@ export default function Table() {
           <thead>
             <tr className="font-semibold p-2">
               <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">No</th>
-              <th className="bg-slate-100 px-2 py-5">Date</th>
+              <th className="bg-slate-100 px-2 py-5">Uploaded Time</th>
               <th className="bg-slate-100 px-2 py-5">Locations</th>
               <th className="bg-slate-100 px-2 py-5">Transaction No</th>
               <th className="bg-slate-100 px-2 py-5">Reference No</th>
@@ -351,7 +422,7 @@ export default function Table() {
             ) : (
               data &&
               data.map((list, index) => (
-                <tr key={index}>
+                <tr key={index} onClick={() => handleRowClick(list)}>
                   <td>{index + 1}</td>
                   <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
                   <td>{list.LocationCode ? list.RefLocation.Name : "-"}</td>
@@ -527,6 +598,77 @@ export default function Table() {
             <div className="flex items-center justify-center mb-3">
               <ScaleLoader size={150} color={"#333"} loading={true} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {isModalOpen && selectedRow && (
+        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-5 rounded-md shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">
+              Input OutTime and Remarks
+            </h2>
+            <form>
+              <div className="flex flex-wrap mb-4 gap-x-10">
+                <div>
+                  <label className="block text-sm font-semibold">
+                    Location Code
+                  </label>
+                  <p className="text-slate-500">{selectedRow.LocationCode}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold">
+                    Transaction No
+                  </label>
+                  <p className="text-slate-500">{selectedRow.TransactionNo}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold">
+                    Vehicle Plate No
+                  </label>
+                  <p className="text-slate-500">{selectedRow.VehiclePlateNo}</p>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  OutTime
+                </label>
+                <input
+                  type="datetime-local"
+                  className="border border-gray-300 p-2 w-full rounded"
+                  value={outTime}
+                  onChange={(e) => setOutTime(e.target.value)}
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2">
+                  Remarks
+                </label>
+                <input
+                  type="text"
+                  className="border border-gray-300 p-2 w-full rounded"
+                  value={remarks}
+                  onChange={(e) => setRemarks(e.target.value)}
+                />
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+                  onClick={handleSave}
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  className="bg-gray-300 text-black px-4 py-2 rounded"
+                  onClick={handleModalClose}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

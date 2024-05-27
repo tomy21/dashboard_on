@@ -4,10 +4,6 @@ import { DateTime } from "luxon";
 import Table from "../components/Table";
 
 export default function Transaction() {
-  // useEffect(() => {
-  //   getData();
-  // }, []);
-
   return (
     <>
       <Navbar />

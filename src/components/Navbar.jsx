@@ -41,6 +41,11 @@ export default function Navbar() {
         const decode = jwtDecode(token);
         setName(decode.name);
         setEmail(decode.email);
+
+        if (decode.exp * 1000 < Date.now()) {
+          navigate("/");
+          return null;
+        }
       } catch (error) {
         if (error.response) {
           navigate("/");
