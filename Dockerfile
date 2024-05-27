@@ -5,7 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm install
-RUN npm i -D daisyui@latest
+RUN npm i daisyui
 RUN npm ci --only=production
 
 COPY . .
