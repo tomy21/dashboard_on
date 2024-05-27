@@ -11,6 +11,8 @@ RUN npm install -g npm@latest
 RUN npm i
 RUN npm ci --only=production
 
+COPY tailwind.config.js /app/
+
 COPY . .
 
 EXPOSE 4001
