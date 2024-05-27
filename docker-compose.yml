@@ -19,6 +19,7 @@ services:
   
 volumes:
   node_modules:
+  tailwind.config.js:
 
 networks:
   backend_network:
