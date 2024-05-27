@@ -5,6 +5,7 @@ WORKDIR /app
 COPY package*.json ./
 
 RUN npm cache clean --force
+RUN npm install -D tailwindcss postcss autoprefixer
 RUN npm install daisyui
 RUN npm install -g npm@latest
 RUN npm i
