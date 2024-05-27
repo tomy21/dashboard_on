@@ -8,7 +8,7 @@ services:
     volumes:
       - .:/app
       - node_modules:/app/node_modules
-      # - tailwind.config.js:/app/tailwind.config.js
+      - tailwind.config.js:/app/tailwind.config.js
     environment:
       - PORT=4001
     ports:
