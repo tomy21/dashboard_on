@@ -89,6 +89,7 @@ export default function Table() {
         setData(responseData.data.data);
         setTotalPages(responseData.data.totalPages);
         setCountData(responseData.data.totalItems);
+        console.log(responseData.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -425,14 +426,21 @@ export default function Table() {
                 <tr key={index} onClick={() => handleRowClick(list)}>
                   <td>{index + 1}</td>
                   <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
-                  <td>{list.LocationCode ? list.RefLocation.Name : "-"}</td>
+                  <td>
+                    {list.RefLocation && list.RefLocation.Name
+                      ? list.RefLocation.Name
+                      : "-"}
+                  </td>
                   <td>{list.TransactionNo}</td>
                   <td>-</td>
                   <td>{list.VehiclePlateNo}</td>
                   <td>
                     <div className="bg-sky-100 rounded-xl flex items-center justify-center p-2 text-success text-center py-1 w-20 h-20">
                       {list.PhotoImage && (
-                        <img src={list.PathPhotoImage} alt="" />
+                        <img
+                          src={`https://dev-valetapi.skyparking.online/${list.PathPhotoImage}`}
+                          alt=""
+                        />
                       )}
                     </div>
                   </td>
