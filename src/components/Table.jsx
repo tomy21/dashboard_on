@@ -14,6 +14,8 @@ import { jwtDecode } from "jwt-decode";
 import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationIcon } from "@heroicons/react/outline";
 import { LuDownloadCloud, LuUploadCloud } from "react-icons/lu";
+import LocationList from "./LocationList";
+import { TbEyeSearch } from "react-icons/tb";
 
 export default function Table() {
   const [limit, setLimit] = useState(10);
@@ -24,6 +26,8 @@ export default function Table() {
   const [search, setSearch] = useState("");
   const [token, setToken] = useState("");
   const [locationCode, setLocationCode] = useState("");
+  const [locationData, setLocation] = useState("");
+  const [setSelectLocation] = useState("");
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [countData, setCountData] = useState(0);
@@ -74,6 +78,21 @@ export default function Table() {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationResponse = await axios.get(
+          `https://dev-valetapi.skyparking.online/api/getAllLocation`
+        );
+        setLocation(locationResponse.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchLocations();
+  }, []);
+
   const getData = useCallback(
     async (accessToken) => {
       try {
@@ -89,7 +108,6 @@ export default function Table() {
         setData(responseData.data.data);
         setTotalPages(responseData.data.totalPages);
         setCountData(responseData.data.totalItems);
-        console.log(responseData.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -137,9 +155,9 @@ export default function Table() {
         const newToken = await refreshToken();
         const decode = jwtDecode(token);
         const response = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/exportDataOn?LocationCode=${
+          `http://dev-valetapi.skyparking.online/api/exportDataOn?LocationCode=${
             locationCode ? locationCode : ""
-          }`,
+          }&startDate=${startDateFormat}&endDate=${endDateFormat}`,
           {
             responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
             headers: {
@@ -340,21 +358,26 @@ export default function Table() {
     <div>
       <ToastContainer />
       <div className="flex justify-between items-center mb-2">
-        <div className="flex flex-row gap-2 justify-start items-center">
-          <h1 className="text-xs">Show</h1>
-          <select
-            name="limit"
-            value={limit}
-            onChange={handleLimit}
-            className="border border-slate-300 rounded-md p-1 text-xs"
-          >
-            <option value="10">10</option>
-            <option value="50">50</option>
-            <option value="100">100</option>
-          </select>
-          <h1 className="text-xs">entries</h1>
-        </div>
         <div className="flex flex-row gap-3 z-10">
+          <RangeDate
+            startDate={startDate}
+            endDate={endDate}
+            handleDateChange={handleDateChange}
+          />
+          <LocationList
+            data={locationData}
+            onSelectLocation={(locCode) => setSelectLocation(locCode)}
+          />
+
+          <input
+            type="search"
+            value={search}
+            onChange={handleSearchChange}
+            className="border border-slate-300 px-3 py-2 rounded-xl text-sm"
+            placeholder="Search"
+          />
+        </div>
+        <div className="flex flex-row gap-3">
           <button
             className="flex flex-row justify-center items-center gap-x-2 text-red-700 hover:text-red-500 cursor-pointer text-sm"
             onClick={downloadTemplate}
@@ -369,28 +392,14 @@ export default function Table() {
             <LuUploadCloud />
             <p>Upload</p>
           </button>
-          <RangeDate
-            startDate={startDate}
-            endDate={endDate}
-            handleDateChange={handleDateChange}
-          />
-
           <button
             type="button"
             onClick={handleExport}
-            className="inline-flex gap-2 justify-center items-center w-full px-4 py-3 font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none text-xs"
+            className="inline-flex gap-2 justify-center items-center w-full px-4 py-3 font-medium text-gray-700 hover:text-amber-500 focus:outline-none text-sm"
           >
-            Export
             <HiOutlineDownload />
+            Export
           </button>
-
-          <input
-            type="search"
-            value={search}
-            onChange={handleSearchChange}
-            className="border border-slate-300 px-3 py-2 rounded-xl text-sm"
-            placeholder="Search"
-          />
         </div>
       </div>
 
@@ -399,15 +408,15 @@ export default function Table() {
           <thead>
             <tr className="font-semibold p-2">
               <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">No</th>
-              <th className="bg-slate-100 px-2 py-5">Uploaded Time</th>
               <th className="bg-slate-100 px-2 py-5">Locations</th>
               <th className="bg-slate-100 px-2 py-5">Transaction No</th>
               <th className="bg-slate-100 px-2 py-5">Reference No</th>
               <th className="bg-slate-100 px-2 py-5">Vehicle Plate</th>
-              <th className="bg-slate-100 px-2 py-5">Photo Image</th>
               <th className="bg-slate-100 px-2 py-5">In Time</th>
               <th className="bg-slate-100 px-2 py-5">Last Update by</th>
+              <th className="bg-slate-100 px-2 py-5">Last Update Date</th>
               <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">Status</th>
+              <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">#</th>
             </tr>
           </thead>
           <tbody>
@@ -425,7 +434,6 @@ export default function Table() {
               data.map((list, index) => (
                 <tr key={index} onClick={() => handleRowClick(list)}>
                   <td>{index + 1}</td>
-                  <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
                   <td>
                     {list.RefLocation && list.RefLocation.Name
                       ? list.RefLocation.Name
@@ -434,22 +442,14 @@ export default function Table() {
                   <td>{list.TransactionNo}</td>
                   <td>-</td>
                   <td>{list.VehiclePlateNo}</td>
-                  <td>
-                    <div className="bg-sky-100 rounded-xl flex items-center justify-center p-2 text-success text-center py-1 w-20 h-20">
-                      {list.PhotoImage && (
-                        <img
-                          src={`https://dev-valetapi.skyparking.online/${list.PathPhotoImage}`}
-                          alt=""
-                        />
-                      )}
-                    </div>
-                  </td>
+
                   <td>
                     {list.InTime
                       ? DateTime.fromISO(list.InTime).toFormat("ff")
                       : "-"}
                   </td>
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
+                  <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
                   <td>
                     <div className="flex flex-row justify-start items-center gap-3">
                       <div>
@@ -476,6 +476,11 @@ export default function Table() {
                       <h1>{list.Status}</h1>
                     </div>
                   </td>
+                  <td>
+                    <button>
+                      <TbEyeSearch />
+                    </button>
+                  </td>
                 </tr>
               ))
             )}
@@ -496,6 +501,18 @@ export default function Table() {
               <span className="font-medium px-1">{countData}</span>
               results
             </p>
+            <div className="flex flex-row gap-2 justify-start items-center">
+              <select
+                name="limit"
+                value={limit}
+                onChange={handleLimit}
+                className="border border-slate-300 rounded-md p-1 text-xs"
+              >
+                <option value="10">10</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
           </div>
           <div>
             <nav aria-label="Page navigation">
@@ -616,6 +633,18 @@ export default function Table() {
             <h2 className="text-xl font-semibold mb-4">
               Input OutTime and Remarks
             </h2>
+            <div className="mb-3">
+              <img
+                src={
+                  `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}` ===
+                  " "
+                    ? `/notAvailable.png`
+                    : `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}`
+                }
+                alt=""
+                width={150}
+              />
+            </div>
             <form>
               <div className="flex flex-wrap mb-4 gap-x-10">
                 <div>
