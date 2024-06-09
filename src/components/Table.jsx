@@ -164,7 +164,6 @@ export default function Table() {
     try {
       setIsLoading(true);
       const newToken = await refreshToken();
-      const decode = jwtDecode(token);
       const response = await axios.get(
         `https://dev-valetapi.skyparking.online/api/exportDataOn?startDate=${startDateFormat}&endDate=${endDateFormat}`,
         {
