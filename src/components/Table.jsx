@@ -27,7 +27,7 @@ export default function Table() {
   const [token, setToken] = useState("");
   const [locationCode, setLocationCode] = useState("");
   const [locationData, setLocation] = useState("");
-  const [setSelectLocation] = useState("");
+  const [selectLocation, setSelectLocation] = useState("");
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [countData, setCountData] = useState(0);
@@ -39,6 +39,7 @@ export default function Table() {
   const [selectedRow, setSelectedRow] = useState(null);
   const [outTime, setOutTime] = useState("");
   const [remarks, setRemarks] = useState("");
+  const [userId, setUserId] = useState(0);
 
   const openModal = () => setIsOpen(true);
   const closeModal = () => {
@@ -65,7 +66,7 @@ export default function Table() {
       setToken(response.data.accessToken);
       const decode = jwtDecode(response.data.accessToken);
       setLocationCode(decode.locationCode);
-
+      setUserId(decode.userId);
       if (decode.exp * 1000 < Date.now()) {
         navigate("/");
         return null;
@@ -82,7 +83,7 @@ export default function Table() {
     const fetchLocations = async () => {
       try {
         const locationResponse = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getAllLocation`
+          `https://dev-valetapi.skyparking.online/api/getByLocation?userId=${userId}`
         );
         setLocation(locationResponse.data);
       } catch (error) {
@@ -91,13 +92,16 @@ export default function Table() {
     };
 
     fetchLocations();
-  }, []);
+  }, [userId]);
 
   const getData = useCallback(
     async (accessToken) => {
       try {
+        const locationParam =
+          selectLocation === " " ? locationData : selectLocation;
+        console.log(selectLocation);
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationCode}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
+          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -112,7 +116,15 @@ export default function Table() {
         console.error("Error fetching data:", error);
       }
     },
-    [limit, locationCode, pages, search, startDateFormat, endDateFormat]
+    [
+      limit,
+      selectLocation,
+      locationData,
+      pages,
+      search,
+      startDateFormat,
+      endDateFormat,
+    ]
   );
 
   const changePage = ({ selected }) => {
@@ -149,55 +161,45 @@ export default function Table() {
   };
 
   const handleExport = async () => {
-    if (locationCode) {
-      try {
-        setIsLoading(true);
-        const newToken = await refreshToken();
-        const decode = jwtDecode(token);
-        const response = await axios.get(
-          `http://dev-valetapi.skyparking.online/api/exportDataOn?LocationCode=${
-            locationCode ? locationCode : ""
-          }&startDate=${startDateFormat}&endDate=${endDateFormat}`,
-          {
-            responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
-            headers: {
-              Authorization: `Bearer ${newToken}`,
-            },
-          }
-        );
-        const downloadUrl = window.URL.createObjectURL(
-          new Blob([response.data])
-        );
-        const fileName = `${decode.locationName}_alldata.xlsx`;
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.setAttribute("download", fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
-
-        if (response.data) {
-          toast.success("Data berhasil diunduh!", {
-            position: "top-right",
-          });
-        } else {
-          toast.error("Gagal mengunduh data.", {
-            position: "top-right",
-          });
+    try {
+      setIsLoading(true);
+      const newToken = await refreshToken();
+      const decode = jwtDecode(token);
+      const response = await axios.get(
+        `https://dev-valetapi.skyparking.online/api/exportDataOn?startDate=${startDateFormat}&endDate=${endDateFormat}`,
+        {
+          responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
+          headers: {
+            Authorization: `Bearer ${newToken}`,
+          },
         }
-      } catch (error) {
-        console.log(error);
-        toast.error("Terjadi kesalahan saat mengunduh data.", {
+      );
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const fileName = `${startDateFormat}_sd${endDateFormat}_alldata.xlsx`;
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+
+      if (response.data) {
+        toast.success("Data berhasil diunduh!", {
           position: "top-right",
         });
-        setIsLoading(false); // Menghentikan loading jika terjadi kesalahan
-      } finally {
-        setIsLoading(false);
+      } else {
+        toast.error("Gagal mengunduh data.", {
+          position: "top-right",
+        });
       }
-    } else {
-      toast.error("Location wajib diisi.", {
+    } catch (error) {
+      console.log(error);
+      toast.error("Terjadi kesalahan saat mengunduh data.", {
         position: "top-right",
       });
+      setIsLoading(false); // Menghentikan loading jika terjadi kesalahan
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -354,6 +356,10 @@ export default function Table() {
     }
   };
 
+  const handleLocationSelect = (locCode) => {
+    setSelectLocation(locCode);
+  };
+
   return (
     <div>
       <ToastContainer />
@@ -366,7 +372,7 @@ export default function Table() {
           />
           <LocationList
             data={locationData}
-            onSelectLocation={(locCode) => setSelectLocation(locCode)}
+            onSelectLocation={handleLocationSelect}
           />
 
           <input
