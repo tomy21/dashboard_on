@@ -57,9 +57,12 @@ export default function Table() {
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.get("http://localhost:3008/api/token", {
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        "https://dev-valetapi.skyparking.online/api/token",
+        {
+          withCredentials: true,
+        }
+      );
       setToken(response.data.accessToken);
       const decode = jwtDecode(response.data.accessToken);
       setLocationCode(decode.locationCode);
@@ -80,7 +83,7 @@ export default function Table() {
     const fetchLocations = async () => {
       try {
         const locationResponse = await axios.get(
-          `http://localhost:3008/api/getByLocation?userId=${userId}`
+          `https://dev-valetapi.skyparking.online/api/getByLocation?userId=${userId}`
         );
         setLocation(locationResponse.data);
       } catch (error) {
@@ -97,7 +100,7 @@ export default function Table() {
         const locationParam =
           selectLocation === " " ? locationData : selectLocation;
         const responseData = await axios.get(
-          `http://localhost:3008/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
+          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -163,7 +166,7 @@ export default function Table() {
       const locationParam =
         selectLocation === "" ? locationData : selectLocation;
       const response = await axios.get(
-        `http://localhost:3008/api/exportDataOn?location=${locationParam}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
+        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
         {
           responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
           headers: {
@@ -231,7 +234,7 @@ export default function Table() {
         const newToken = await refreshToken(); // Refresh token before upload
 
         const response = await axios.post(
-          `http://localhost:3008/api/upload/dataOverNight?locationCode=${locationCode}`,
+          `https://dev-valetapi.skyparking.online/api/upload/dataOverNight?locationCode=${locationCode}`,
           formData,
           {
             headers: {
@@ -323,7 +326,7 @@ export default function Table() {
       };
 
       const response = await axios.put(
-        "http://localhost:3008/api/updateOutAndRemaks",
+        "https://dev-valetapi.skyparking.online/api/updateOutAndRemaks",
         requestBody, // Mengirim request body secara langsung
         {
           headers: {
@@ -637,9 +640,10 @@ export default function Table() {
             <div className="mb-3">
               <img
                 src={
-                  `http://localhost:3008${selectedRow.PathPhotoImage}` === " "
+                  `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}` ===
+                  " "
                     ? `/notAvailable.png`
-                    : `http://localhost:3008${selectedRow.PathPhotoImage}`
+                    : `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}`
                 }
                 alt=""
                 width={150}
