@@ -31,12 +31,9 @@ export default function Navbar() {
   useEffect(() => {
     const refreshToken = async () => {
       try {
-        const response = await axios.get(
-          "https://dev-valetapi.skyparking.online/api/token",
-          {
-            withCredentials: true,
-          }
-        );
+        const response = await axios.get("http://localhost:3008/api/token", {
+          withCredentials: true,
+        });
         setToken(response.data.accessToken);
         const decode = jwtDecode(token);
         setName(decode.name);
@@ -58,7 +55,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      await axios.get("https://dev-valetapi.skyparking.online/api/logout");
+      await axios.get("http://localhost:3008/api/logout");
       navigate("/");
     } catch (error) {
       console.log(error);

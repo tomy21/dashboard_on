@@ -57,12 +57,9 @@ export default function Table() {
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.get(
-        "https://dev-valetapi.skyparking.online/api/token",
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await axios.get("http://localhost:3008/api/token", {
+        withCredentials: true,
+      });
       setToken(response.data.accessToken);
       const decode = jwtDecode(response.data.accessToken);
       setLocationCode(decode.locationCode);
@@ -83,7 +80,7 @@ export default function Table() {
     const fetchLocations = async () => {
       try {
         const locationResponse = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getByLocation?userId=${userId}`
+          `http://localhost:3008/api/getByLocation?userId=${userId}`
         );
         setLocation(locationResponse.data);
       } catch (error) {
@@ -99,9 +96,8 @@ export default function Table() {
       try {
         const locationParam =
           selectLocation === " " ? locationData : selectLocation;
-        console.log(selectLocation);
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
+          `http://localhost:3008/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -164,8 +160,10 @@ export default function Table() {
     try {
       setIsLoading(true);
       const newToken = await refreshToken();
+      const locationParam =
+        selectLocation === "" ? locationData : selectLocation;
       const response = await axios.get(
-        `https://dev-valetapi.skyparking.online/api/exportDataOn?startDate=${startDateFormat}&endDate=${endDateFormat}`,
+        `http://localhost:3008/api/exportDataOn?location=${locationParam}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
         {
           responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
           headers: {
@@ -233,7 +231,7 @@ export default function Table() {
         const newToken = await refreshToken(); // Refresh token before upload
 
         const response = await axios.post(
-          `https://dev-valetapi.skyparking.online/api/upload/dataOverNight?locationCode=${locationCode}`,
+          `http://localhost:3008/api/upload/dataOverNight?locationCode=${locationCode}`,
           formData,
           {
             headers: {
@@ -325,7 +323,7 @@ export default function Table() {
       };
 
       const response = await axios.put(
-        "https://dev-valetapi.skyparking.online/api/updateOutAndRemaks",
+        "http://localhost:3008/api/updateOutAndRemaks",
         requestBody, // Mengirim request body secara langsung
         {
           headers: {
@@ -415,7 +413,6 @@ export default function Table() {
               <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">No</th>
               <th className="bg-slate-100 px-2 py-5">Locations</th>
               <th className="bg-slate-100 px-2 py-5">Transaction No</th>
-              <th className="bg-slate-100 px-2 py-5">Reference No</th>
               <th className="bg-slate-100 px-2 py-5">Vehicle Plate</th>
               <th className="bg-slate-100 px-2 py-5">In Time</th>
               <th className="bg-slate-100 px-2 py-5">Last Update by</th>
@@ -445,14 +442,13 @@ export default function Table() {
                       : "-"}
                   </td>
                   <td>{list.TransactionNo}</td>
-                  <td>-</td>
-                  <td>{list.VehiclePlateNo}</td>
-
                   <td>
                     {list.InTime
                       ? DateTime.fromISO(list.InTime).toFormat("ff")
                       : "-"}
                   </td>
+                  <td>{list.VehiclePlateNo}</td>
+
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
                   <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
                   <td>
@@ -641,10 +637,9 @@ export default function Table() {
             <div className="mb-3">
               <img
                 src={
-                  `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}` ===
-                  " "
+                  `http://localhost:3008${selectedRow.PathPhotoImage}` === " "
                     ? `/notAvailable.png`
-                    : `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}`
+                    : `http://localhost:3008${selectedRow.PathPhotoImage}`
                 }
                 alt=""
                 width={150}
