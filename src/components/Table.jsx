@@ -16,6 +16,7 @@ import { ExclamationIcon } from "@heroicons/react/outline";
 import { LuDownloadCloud, LuUploadCloud } from "react-icons/lu";
 import LocationList from "./LocationList";
 import { TbEyeSearch } from "react-icons/tb";
+import CardTop from "./CardTop";
 
 export default function Table() {
   const [limit, setLimit] = useState(10);
@@ -31,6 +32,8 @@ export default function Table() {
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [countData, setCountData] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [inArea, setInArea] = useState("0");
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState(null);
@@ -107,10 +110,12 @@ export default function Table() {
             },
           }
         );
-
+        console.log(responseData.data.summary);
         setData(responseData.data.data);
         setTotalPages(responseData.data.totalPages);
         setCountData(responseData.data.totalItems);
+        setTotalCount(responseData.data.summary[0].TotalCount);
+        setInArea(responseData.data.summary[0].InareaCount);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -174,8 +179,10 @@ export default function Table() {
           },
         }
       );
+      const nameLocation =
+        selectLocation === "AllLocation" ? locationData : selectLocation;
       const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const fileName = `${startDateFormat}_sd${endDateFormat}_alldata.xlsx`;
+      const fileName = `${nameLocation}_${startDateFormat}_sd${endDateFormat}.xlsx`;
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.setAttribute("download", fileName);
@@ -359,11 +366,46 @@ export default function Table() {
   const handleLocationSelect = (locCode) => {
     setSelectLocation(locCode);
   };
-
+  console.log(totalCount, inArea);
   return (
     <div>
       <ToastContainer />
-      <div className="flex justify-between items-center mb-2">
+      <div className="flex flex-row gap-3">
+        <CardTop title={"Total Transaksi Menginap"} value={0} />
+        <CardTop title={"Total Ceklist Kendaraan"} value={totalCount} />
+        <div className="border border-slate-400 bg-white shadow-md rounded-md w-80 h-32 text-start px-3 py-2">
+          <h1 className="text-sm font-medium mb-2 text-gray-400">Status</h1>
+          <hr />
+          <div className="flex justify-between items-center">
+            <div className="flex flex-col items-start gap-1">
+              <p className="text-xl font-semibold mt-3">{inArea}</p>
+              <div className="flex flex-row justify-start items-center gap-3">
+                <div>
+                  <div className="relative w-5 h-5 rounded-full bg-green-100">
+                    <div className="absolute top-[6px] left-[6px] w-2 h-2 rounded-full bg-green-600"></div>
+                  </div>
+                </div>
+                <p className="text-xs">Menginap</p>
+              </div>
+            </div>
+
+            <div className="h-10 w-px bg-gray-300"></div>
+
+            <div className="flex flex-col items-start gap-1">
+              <p className="text-xl font-semibold mt-3">{0}</p>
+              <div className="flex flex-row justify-start items-center gap-3">
+                <div>
+                  <div className="relative w-5 h-5 rounded-full bg-red-100">
+                    <div className="absolute top-[6px] left-[6px] w-2 h-2 rounded-full bg-red-600"></div>
+                  </div>
+                </div>
+                <p className="text-xs">{"Menginap > 1 hari"}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex justify-between items-center mb-2 mt-3">
         <div className="flex flex-row gap-3 z-10">
           <RangeDate
             startDate={startDate}
@@ -414,14 +456,13 @@ export default function Table() {
           <thead>
             <tr className="font-semibold p-2">
               <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">No</th>
-              <th className="bg-slate-100 px-2 py-5">Locations</th>
-              <th className="bg-slate-100 px-2 py-5">Transaction No</th>
-              <th className="bg-slate-100 px-2 py-5">Vehicle Plate</th>
-              <th className="bg-slate-100 px-2 py-5">In Time</th>
-              <th className="bg-slate-100 px-2 py-5">Last Update by</th>
-              <th className="bg-slate-100 px-2 py-5">Last Update Date</th>
+              <th className="bg-slate-100 px-2 py-5">Lokasi</th>
+              <th className="bg-slate-100 px-2 py-5">No Transaksi</th>
+              <th className="bg-slate-100 px-2 py-5">Waktu Masuk</th>
+              <th className="bg-slate-100 px-2 py-5">No Kendaraan</th>
+              <th className="bg-slate-100 px-2 py-5">Diupdate Oleh</th>
+              <th className="bg-slate-100 px-2 py-5">Tanggal Terupdate</th>
               <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">Status</th>
-              <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">#</th>
             </tr>
           </thead>
           <tbody>
@@ -451,7 +492,6 @@ export default function Table() {
                       : "-"}
                   </td>
                   <td>{list.VehiclePlateNo}</td>
-
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
                   <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
                   <td>
@@ -479,11 +519,6 @@ export default function Table() {
                       </div>
                       <h1>{list.Status}</h1>
                     </div>
-                  </td>
-                  <td>
-                    <button>
-                      <TbEyeSearch />
-                    </button>
                   </td>
                 </tr>
               ))
