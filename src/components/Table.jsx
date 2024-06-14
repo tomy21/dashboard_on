@@ -2,7 +2,8 @@ import React, { Fragment, useCallback, useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 import axios from "axios";
-import RangeDate from "./RangeDate";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { toast, ToastContainer } from "react-toastify";
 import ReactPagination from "react-paginate";
 import "react-toastify/dist/ReactToastify.css";
@@ -15,14 +16,13 @@ import { Dialog, Transition } from "@headlessui/react";
 import { ExclamationIcon } from "@heroicons/react/outline";
 import { LuDownloadCloud, LuUploadCloud } from "react-icons/lu";
 import LocationList from "./LocationList";
-import { TbEyeSearch } from "react-icons/tb";
 import CardTop from "./CardTop";
+import { FaRegCalendarAlt, FaAngleDown } from "react-icons/fa";
 
 export default function Table() {
   const [limit, setLimit] = useState(10);
   const [pages, setPages] = useState(0);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [startDate, setStartDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(null);
   const [search, setSearch] = useState("");
   const [token, setToken] = useState("");
@@ -50,13 +50,8 @@ export default function Table() {
     setFile(null);
     setError("");
   };
-
-  const startDateFormat = startDate
-    ? DateTime.fromJSDate(new Date(startDate)).toFormat("yyyy-MM-dd")
-    : "";
-  const endDateFormat = endDate
-    ? DateTime.fromJSDate(new Date(endDate)).toFormat("yyyy-MM-dd")
-    : "";
+  const dateTime = DateTime.fromJSDate(startDate, { zone: "Asia/Jakarta" });
+  const formattedDate = dateTime.toFormat("yyyy-MM-dd");
 
   const refreshToken = useCallback(async () => {
     try {
@@ -103,14 +98,13 @@ export default function Table() {
         const locationParam =
           selectLocation === " " ? locationData : selectLocation;
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
+          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
             },
           }
         );
-        console.log(responseData.data.summary);
         setData(responseData.data.data);
         setTotalPages(responseData.data.totalPages);
         setCountData(responseData.data.totalItems);
@@ -120,15 +114,7 @@ export default function Table() {
         console.error("Error fetching data:", error);
       }
     },
-    [
-      limit,
-      selectLocation,
-      locationData,
-      pages,
-      search,
-      startDateFormat,
-      endDateFormat,
-    ]
+    [limit, selectLocation, locationData, pages, search, formattedDate]
   );
 
   const changePage = ({ selected }) => {
@@ -158,12 +144,6 @@ export default function Table() {
     }
   };
 
-  const handleDateChange = (dates) => {
-    const [start, end] = dates;
-    setStartDate(start);
-    setEndDate(end);
-  };
-
   const handleExport = async () => {
     try {
       setIsLoading(true);
@@ -171,7 +151,7 @@ export default function Table() {
       const locationParam =
         selectLocation === "" ? locationData : selectLocation;
       const response = await axios.get(
-        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&startDate=${startDateFormat}&endDate=${endDateFormat}`,
+        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
         {
           responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
           headers: {
@@ -182,7 +162,7 @@ export default function Table() {
       const nameLocation =
         selectLocation === "AllLocation" ? locationData : selectLocation;
       const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const fileName = `${nameLocation}_${startDateFormat}_sd${endDateFormat}.xlsx`;
+      const fileName = `${nameLocation}_${formattedDate}.xlsx`;
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.setAttribute("download", fileName);
@@ -366,7 +346,20 @@ export default function Table() {
   const handleLocationSelect = (locCode) => {
     setSelectLocation(locCode);
   };
-  console.log(totalCount, inArea);
+
+  const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
+    <div className="relative">
+      <input
+        type="text"
+        ref={ref}
+        defaultValue={value}
+        onClick={onClick}
+        className="border border-gray-300 text-start text-xs items-center w-40 h-10 pl-8 pr-3 py-1 rounded-md"
+      />
+      <FaRegCalendarAlt className="absolute top-3 left-2 text-gray-500" />
+      <FaAngleDown className="absolute top-3 right-1 text-gray-500" />
+    </div>
+  ));
   return (
     <div>
       <ToastContainer />
@@ -407,10 +400,13 @@ export default function Table() {
       </div>
       <div className="flex justify-between items-center mb-2 mt-3">
         <div className="flex flex-row gap-3 z-10">
-          <RangeDate
-            startDate={startDate}
-            endDate={endDate}
-            handleDateChange={handleDateChange}
+          <DatePicker
+            selected={startDate}
+            onChange={(date) => setStartDate(date)}
+            dateFormat="dd-MMMM-yyyy"
+            popperPlacement="bottom-start"
+            className="custom-date-picker"
+            customInput={<CustomInput />}
           />
           <LocationList
             data={locationData}
