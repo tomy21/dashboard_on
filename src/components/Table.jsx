@@ -456,6 +456,7 @@ export default function Table() {
               <th className="bg-slate-100 px-2 py-5">No Transaksi</th>
               <th className="bg-slate-100 px-2 py-5">Waktu Masuk</th>
               <th className="bg-slate-100 px-2 py-5">No Kendaraan</th>
+              <th className="bg-slate-100 px-2 py-5">Plate Recognize</th>
               <th className="bg-slate-100 px-2 py-5">Diupdate Oleh</th>
               <th className="bg-slate-100 px-2 py-5">Tanggal Terupdate</th>
               <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">Status</th>
@@ -488,6 +489,7 @@ export default function Table() {
                       : "-"}
                   </td>
                   <td>{list.VehiclePlateNo}</td>
+                  <td>{list.Plateregognizer}</td>
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
                   <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
                   <td>
