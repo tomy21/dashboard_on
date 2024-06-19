@@ -50,17 +50,15 @@ export default function Table() {
     setFile(null);
     setError("");
   };
-  const dateTime = DateTime.fromJSDate(startDate, { zone: "Asia/Jakarta" });
-  const formattedDate = dateTime.toFormat("yyyy-MM-dd");
+  const dateTime = DateTime.fromISO(startDate, {
+    zone: "utc",
+  }).toFormat("dd MMM yyyy, HH:mm:ss");
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.get(
-        "https://dev-valetapi.skyparking.online/api/token",
-        {
-          withCredentials: true,
-        }
-      );
+      const response = await axios.get("http://localhost:3008/api/token", {
+        withCredentials: true,
+      });
       setToken(response.data.accessToken);
       const decode = jwtDecode(response.data.accessToken);
       setLocationCode(decode.locationCode);
@@ -81,7 +79,7 @@ export default function Table() {
     const fetchLocations = async () => {
       try {
         const locationResponse = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getByLocation?userId=${userId}`
+          `http://localhost:3008/api/getByLocation?userId=${userId}`
         );
         setLocation(locationResponse.data);
       } catch (error) {
@@ -98,7 +96,7 @@ export default function Table() {
         const locationParam =
           selectLocation === " " ? locationData : selectLocation;
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
+          `http://localhost:3008/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${dateTime}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -114,7 +112,7 @@ export default function Table() {
         console.error("Error fetching data:", error);
       }
     },
-    [limit, selectLocation, locationData, pages, search, formattedDate]
+    [limit, selectLocation, locationData, pages, search, dateTime]
   );
 
   const changePage = ({ selected }) => {
@@ -151,7 +149,7 @@ export default function Table() {
       const locationParam =
         selectLocation === "" ? locationData : selectLocation;
       const response = await axios.get(
-        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
+        `http://localhost:3008/api/exportDataOn?location=${locationParam}&date=${dateTime}`,
         {
           responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
           headers: {
@@ -162,7 +160,7 @@ export default function Table() {
       const nameLocation =
         selectLocation === "AllLocation" ? locationData : selectLocation;
       const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const fileName = `${nameLocation}_${formattedDate}.xlsx`;
+      const fileName = `${nameLocation}_${dateTime}.xlsx`;
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.setAttribute("download", fileName);
@@ -221,7 +219,7 @@ export default function Table() {
         const newToken = await refreshToken(); // Refresh token before upload
 
         const response = await axios.post(
-          `https://dev-valetapi.skyparking.online/api/upload/dataOverNight?locationCode=${locationCode}`,
+          `http://localhost:3008/api/upload/dataOverNight?locationCode=${locationCode}`,
           formData,
           {
             headers: {
@@ -313,7 +311,7 @@ export default function Table() {
       };
 
       const response = await axios.put(
-        "https://dev-valetapi.skyparking.online/api/updateOutAndRemaks",
+        "http://localhost:3008/api/updateOutAndRemaks",
         requestBody, // Mengirim request body secara langsung
         {
           headers: {
@@ -485,13 +483,17 @@ export default function Table() {
                   <td>{list.TransactionNo}</td>
                   <td>
                     {list.InTime
-                      ? DateTime.fromISO(list.InTime).toFormat("ff")
+                      ? DateTime.fromISO(list.InTime).toLocal().toFormat("ff")
                       : "-"}
                   </td>
                   <td>{list.VehiclePlateNo}</td>
                   <td>{list.Plateregognizer}</td>
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
-                  <td>{DateTime.fromISO(list.ModifiedOn).toFormat("ff")}</td>
+                  <td>
+                    {DateTime.fromISO(list.ModifiedOn, {
+                      zone: "utc",
+                    }).toFormat("dd MMM yyyy, HH:mm:ss")}
+                  </td>
                   <td>
                     <div className="flex flex-row justify-start items-center gap-3">
                       <div>
@@ -673,10 +675,9 @@ export default function Table() {
             <div className="mb-3">
               <img
                 src={
-                  `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}` ===
-                  " "
+                  `http://localhost:3008${selectedRow.PathPhotoImage}` === " "
                     ? `/notAvailable.png`
-                    : `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}`
+                    : `http://localhost:3008${selectedRow.PathPhotoImage}`
                 }
                 alt=""
                 width={150}
