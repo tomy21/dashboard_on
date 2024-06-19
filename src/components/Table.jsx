@@ -50,9 +50,8 @@ export default function Table() {
     setFile(null);
     setError("");
   };
-  const dateTime = DateTime.fromISO(startDate, {
-    zone: "utc",
-  }).toFormat("dd MMM yyyy, HH:mm:ss");
+  const dateTime = DateTime.fromJSDate(startDate, { zone: "Asia/Jakarta" });
+  const formattedDate = dateTime.toFormat("yyyy-MM-dd");
 
   const refreshToken = useCallback(async () => {
     try {
@@ -99,7 +98,7 @@ export default function Table() {
         const locationParam =
           selectLocation === " " ? locationData : selectLocation;
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${dateTime}`,
+          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -115,7 +114,7 @@ export default function Table() {
         console.error("Error fetching data:", error);
       }
     },
-    [limit, selectLocation, locationData, pages, search, dateTime]
+    [limit, selectLocation, locationData, pages, search, formattedDate]
   );
 
   const changePage = ({ selected }) => {
@@ -152,7 +151,7 @@ export default function Table() {
       const locationParam =
         selectLocation === "" ? locationData : selectLocation;
       const response = await axios.get(
-        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${dateTime}`,
+        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
         {
           responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
           headers: {
@@ -163,7 +162,7 @@ export default function Table() {
       const nameLocation =
         selectLocation === "AllLocation" ? locationData : selectLocation;
       const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const fileName = `${nameLocation}_${dateTime}.xlsx`;
+      const fileName = `${nameLocation}_${formattedDate}.xlsx`;
       const link = document.createElement("a");
       link.href = downloadUrl;
       link.setAttribute("download", fileName);
