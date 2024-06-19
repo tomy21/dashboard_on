@@ -485,7 +485,9 @@ export default function Table() {
                   <td>{list.TransactionNo}</td>
                   <td>
                     {list.InTime
-                      ? DateTime.fromISO(list.InTime).toLocal().toFormat("ff")
+                      ? DateTime.fromISO(list.InTime, {
+                          zone: "+07:00",
+                        }).toFormat("dd MMM yyyy, HH:mm:ss")
                       : "-"}
                   </td>
                   <td>{list.VehiclePlateNo}</td>
@@ -493,7 +495,7 @@ export default function Table() {
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
                   <td>
                     {DateTime.fromISO(list.ModifiedOn, {
-                      zone: "utc",
+                      zone: "+07:00",
                     }).toFormat("dd MMM yyyy, HH:mm:ss")}
                   </td>
                   <td>
