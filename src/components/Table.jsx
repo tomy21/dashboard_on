@@ -33,7 +33,7 @@ export default function Table() {
   const [totalPages, setTotalPages] = useState(1);
   const [countData, setCountData] = useState(0);
   const [totalCount, setTotalCount] = useState(0);
-  const [inArea, setInArea] = useState("0");
+  const [inArea, setInArea] = useState(0);
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [file, setFile] = useState(null);
@@ -105,6 +105,7 @@ export default function Table() {
             },
           }
         );
+        console.log(responseData.data);
         setData(responseData.data.data);
         setTotalPages(responseData.data.totalPages);
         setCountData(responseData.data.totalItems);
@@ -347,6 +348,18 @@ export default function Table() {
     setSelectLocation(locCode);
   };
 
+  const timeDifferenceFormat = (startDateTime, endDateTime) => {
+    const start = DateTime.fromISO(startDateTime, { zone: "+07:00" });
+    const end = DateTime.fromISO(endDateTime, { zone: "+07:00" });
+
+    const diff = end.diff(start, ["days", "hours", "minutes"]);
+    const { days, hours, minutes } = diff.toObject();
+
+    return `${Math.floor(days)} d, ${Math.floor(hours)} h, ${Math.floor(
+      minutes
+    )} m`;
+  };
+
   const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
     <div className="relative">
       <input
@@ -455,10 +468,11 @@ export default function Table() {
               <th className="bg-slate-100 px-2 py-5">Lokasi</th>
               <th className="bg-slate-100 px-2 py-5">No Transaksi</th>
               <th className="bg-slate-100 px-2 py-5">Waktu Masuk</th>
+              <th className="bg-slate-100 px-2 py-5">Plate By System</th>
               <th className="bg-slate-100 px-2 py-5">No Kendaraan</th>
-              <th className="bg-slate-100 px-2 py-5">Plate Recognize</th>
               <th className="bg-slate-100 px-2 py-5">Diupdate Oleh</th>
-              <th className="bg-slate-100 px-2 py-5">Tanggal Terupdate</th>
+              <th className="bg-slate-100 px-2 py-5">Tanggal Upload</th>
+              <th className="bg-slate-100 px-2 py-5">Durasi</th>
               <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">Status</th>
             </tr>
           </thead>
@@ -490,13 +504,16 @@ export default function Table() {
                         }).toFormat("dd MMM yyyy, HH:mm:ss")
                       : "-"}
                   </td>
-                  <td>{list.VehiclePlateNo}</td>
                   <td>{list.Plateregognizer}</td>
+                  <td>{list.VehiclePlateNo}</td>
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
                   <td>
-                    {DateTime.fromISO(list.ModifiedOn, {
+                    {DateTime.fromISO(list.UploadedAt, {
                       zone: "+07:00",
                     }).toFormat("dd MMM yyyy, HH:mm:ss")}
+                  </td>
+                  <td>
+                    {timeDifferenceFormat(list.CreatedAt, list.ModifiedOn)}
                   </td>
                   <td>
                     <div className="flex flex-row justify-start items-center gap-3">
