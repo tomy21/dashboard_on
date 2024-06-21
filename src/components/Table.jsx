@@ -44,6 +44,7 @@ export default function Table() {
   const [outTime, setOutTime] = useState("");
   const [remarks, setRemarks] = useState("");
   const [userId, setUserId] = useState(0);
+  const [userLocations, setUserLocations] = useState([]);
 
   const openModal = () => setIsOpen(true);
   const closeModal = () => {
@@ -93,11 +94,29 @@ export default function Table() {
     fetchLocations();
   }, [userId]);
 
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const locationResponse = await axios.get(
+          `https://dev-valetapi.skyparking.online/api/getLocationById?id=${userId}`
+        );
+        setUserLocations(locationResponse.data.locationCodes);
+        // console.log("location:", locationResponse.data);
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchLocations();
+  }, [userId]);
+
   const getData = useCallback(
     async (accessToken) => {
       try {
         const locationParam =
-          selectLocation === " " ? locationData : selectLocation;
+          selectLocation === ""
+            ? JSON.stringify(userLocations)
+            : JSON.stringify([selectLocation]);
         const responseData = await axios.get(
           `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
           {
@@ -106,7 +125,6 @@ export default function Table() {
             },
           }
         );
-        console.log(responseData.data);
         setData(responseData.data.data);
         setTotalPages(responseData.data.totalPages);
         setCountData(responseData.data.totalItems);
@@ -116,7 +134,7 @@ export default function Table() {
         console.error("Error fetching data:", error);
       }
     },
-    [limit, selectLocation, locationData, pages, search, formattedDate]
+    [limit, selectLocation, userLocations, pages, search, formattedDate]
   );
 
   const changePage = ({ selected }) => {
@@ -151,7 +169,9 @@ export default function Table() {
       setIsLoading(true);
       const newToken = await refreshToken();
       const locationParam =
-        selectLocation === "" ? locationData : selectLocation;
+        selectLocation === ""
+          ? JSON.stringify(userLocations)
+          : JSON.stringify([selectLocation]);
       const response = await axios.get(
         `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
         {
