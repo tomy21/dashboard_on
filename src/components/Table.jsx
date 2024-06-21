@@ -29,6 +29,7 @@ export default function Table() {
   const [locationCode, setLocationCode] = useState("");
   const [locationData, setLocation] = useState("");
   const [selectLocation, setSelectLocation] = useState("");
+  const [selectLocationName, setSelectLocationName] = useState("");
   const [data, setData] = useState([]);
   const [totalPages, setTotalPages] = useState(1);
   const [countData, setCountData] = useState(0);
@@ -161,7 +162,9 @@ export default function Table() {
         }
       );
       const nameLocation =
-        selectLocation === "AllLocation" ? locationData : selectLocation;
+        selectLocationName === "AllLocation"
+          ? locationData
+          : selectLocationName;
       const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
       const fileName = `${nameLocation}_${formattedDate}.xlsx`;
       const link = document.createElement("a");
@@ -347,6 +350,9 @@ export default function Table() {
   const handleLocationSelect = (locCode) => {
     setSelectLocation(locCode);
   };
+  const handleLocationNameSelect = (locName) => {
+    setSelectLocationName(locName);
+  };
 
   const timeDifferenceFormat = (startDateTime, endDateTime) => {
     const start = DateTime.fromISO(startDateTime, { zone: "+07:00" });
@@ -424,6 +430,7 @@ export default function Table() {
           <LocationList
             data={locationData}
             onSelectLocation={handleLocationSelect}
+            onSelectNameLocation={handleLocationNameSelect}
           />
 
           <input

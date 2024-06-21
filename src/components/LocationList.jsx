@@ -4,7 +4,11 @@ import makeAnimated from "react-select/animated";
 
 const animatedComponents = makeAnimated();
 
-export default function LocationList({ data, onSelectLocation }) {
+export default function LocationList({
+  data,
+  onSelectLocation,
+  onSelectNameLocation,
+}) {
   if (!data || data.length === 0) {
     return <p>No location data available.</p>;
   }
@@ -19,6 +23,7 @@ export default function LocationList({ data, onSelectLocation }) {
 
   const handleChange = (selectedOption) => {
     onSelectLocation(selectedOption.value);
+    onSelectNameLocation(selectedOption.label);
   };
 
   return (
