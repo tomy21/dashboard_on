@@ -67,31 +67,29 @@ export default function Login() {
   };
   return (
     <>
-      <main className="flex min-h-screen flex-col items-center justify-between p-20">
-        <div className="container w-[80%] h-full ">
-          <div className="flex flex-row justify-center items-center text-black bg-white rounded-md p-6 shadow shadow-white">
-            <div className="w-full h-full p-5">
+      <main className="flex min-h-screen flex-col items-center justify-between p-6 md:p-20">
+        <div className="container w-full md:w-[80%] h-full">
+          <div className="flex flex-col md:flex-row justify-center items-center text-black bg-white rounded-md p-6 shadow shadow-white">
+            <div className="w-full md:w-1/2 h-full p-5">
               <div className="flex flex-col justify-center items-center">
                 <img
                   src={"/images1.png"}
-                  width={350}
-                  height={350}
+                  className="w-48 h-48 md:w-80 md:h-80 md:block hidden"
                   alt={"skyparking"}
                 />
                 <div className="flex flex-row gap-3 items-end justify-center mt-2">
                   <img
                     src={"/logo.png"}
-                    width={50}
-                    height={50}
+                    className="w-12 h-12 md:w-14 md:h-14"
                     alt={"skyparking"}
                   />
-                  <h1 className="text-2xl font-semibold">
+                  <h1 className="text-xl md:text-2xl font-semibold">
                     SKY Parking Over Night{" "}
                   </h1>
                 </div>
               </div>
             </div>
-            <div className="w-[70%] h-full p-5">
+            <div className="w-full md:w-1/2 h-full p-5">
               <h1 className="text-base font-semibold">Welcome back, </h1>
               <h1 className="text-sm text-slate-400">
                 Please login to your account

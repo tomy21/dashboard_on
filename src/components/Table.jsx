@@ -402,10 +402,10 @@ export default function Table() {
   return (
     <div>
       <ToastContainer />
-      <div className="flex flex-row gap-3">
+      <div className="flex flex-wrap md:flex-row gap-x-5 gap-y-3 md:gap-3 ">
         <CardTop title={"Total Transaksi Menginap"} value={0} />
         <CardTop title={"Total Ceklist Kendaraan"} value={totalCount} />
-        <div className="border border-slate-400 bg-white shadow-md rounded-md w-80 h-32 text-start px-3 py-2">
+        <div className="border border-slate-400 bg-white shadow-md rounded-md w-full h-32 md:w-80 md:h-32 text-start px-3 py-2">
           <h1 className="text-sm font-medium mb-2 text-gray-400">Status</h1>
           <hr />
           <div className="flex justify-between items-center">
@@ -437,8 +437,8 @@ export default function Table() {
           </div>
         </div>
       </div>
-      <div className="flex justify-between items-center mb-2 mt-3">
-        <div className="flex flex-row gap-3 z-10">
+      <div className="flex flex-wrap md:justify-between items-center mb-2 mt-3">
+        <div className="flex flex-wrap md:flex-row gap-3 z-10">
           <DatePicker
             selected={startDate}
             onChange={(date) => setStartDate(date)}
