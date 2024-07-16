@@ -42,7 +42,7 @@ export default function Login() {
         ).toString();
 
         await axios.post(
-          "https://dev-valetapi.skyparking.online/api/login",
+          "https://dev-valetapi.skyparking.onlin/api/login",
           {
             data: encrypData,
           },

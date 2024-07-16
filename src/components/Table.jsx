@@ -58,7 +58,7 @@ export default function Table() {
   const refreshToken = useCallback(async () => {
     try {
       const response = await axios.get(
-        "https://dev-valetapi.skyparking.online/api/token",
+        "https://dev-valetapi.skyparking.onlin/api/token",
         {
           withCredentials: true,
         }
@@ -80,28 +80,26 @@ export default function Table() {
   }, [navigate]);
 
   useEffect(() => {
-    const fetchLocations = async () => {
-      try {
-        const locationResponse = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getByLocation?userId=${userId}`
-        );
-        setLocation(locationResponse.data);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-
-    fetchLocations();
-  }, [userId]);
+    refreshToken();
+  }, [refreshToken]);
 
   useEffect(() => {
     const fetchLocations = async () => {
+      if (!userId) return; // Hanya jalankan jika userId sudah ada
+
       try {
-        const locationResponse = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getLocationById?id=${userId}`
-        );
-        setUserLocations(locationResponse.data.locationCodes);
-        // console.log("location:", locationResponse.data);
+        let locationResponse;
+        if (userId === 114) {
+          locationResponse = await axios.get(
+            `https://dev-valetapi.skyparking.onlin/api/getAllLocation`
+          );
+        } else {
+          locationResponse = await axios.get(
+            `https://dev-valetapi.skyparking.onlin/api/getByLocation?userId=${userId}`
+          );
+        }
+        setLocation(locationResponse.data || []); // Sesuaikan dengan struktur data dari API
+        setUserLocations(locationResponse.data || []); // Sesuaikan dengan struktur data dari API
       } catch (error) {
         console.log(error);
       }
@@ -113,12 +111,18 @@ export default function Table() {
   const getData = useCallback(
     async (accessToken) => {
       try {
+        const codes = Array.isArray(locationData)
+          ? locationData.map((location) => location.Code)
+          : locationData.locationCodes &&
+            Array.isArray(locationData.locationCodes)
+          ? locationData.locationCodes.map((location) => location.Code)
+          : [];
         const locationParam =
           selectLocation === ""
-            ? JSON.stringify(userLocations)
+            ? JSON.stringify(codes)
             : JSON.stringify([selectLocation]);
         const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
+          `https://dev-valetapi.skyparking.onlin/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -151,16 +155,14 @@ export default function Table() {
 
   const handleLimit = (event) => {
     const selectedLimit = parseInt(event.target.value);
-    const newTotalPages = Math.ceil(countData / selectedLimit); // Calculate new total pages based on total data count
+    const newTotalPages = Math.ceil(countData / selectedLimit);
 
     setLimit(selectedLimit);
 
-    // Update current page if it exceeds new total pages
     if (pages > newTotalPages) {
-      setPages(1); // Reset to first page
+      setPages(1);
     } else {
-      // Ensure first page has active class when changing limit
-      changePage({ selected: 0 }); // Set to first page
+      changePage({ selected: 0 });
     }
   };
 
@@ -173,9 +175,9 @@ export default function Table() {
           ? JSON.stringify(userLocations)
           : JSON.stringify([selectLocation]);
       const response = await axios.get(
-        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
+        `https://dev-valetapi.skyparking.onlin/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
         {
-          responseType: "arraybuffer", // Mengatur responseType sebagai arraybuffer
+          responseType: "arraybuffer",
           headers: {
             Authorization: `Bearer ${newToken}`,
           },
@@ -208,12 +210,12 @@ export default function Table() {
       toast.error("Terjadi kesalahan saat mengunduh data.", {
         position: "top-right",
       });
-      setIsLoading(false); // Menghentikan loading jika terjadi kesalahan
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
   };
-
+  // console.log(locationData);
   const handleSearchChange = (event) => {
     setSearch(event.target.value);
   };
@@ -245,7 +247,7 @@ export default function Table() {
         const newToken = await refreshToken(); // Refresh token before upload
 
         const response = await axios.post(
-          `https://dev-valetapi.skyparking.online/api/upload/dataOverNight?locationCode=${locationCode}`,
+          `https://dev-valetapi.skyparking.onlin/api/upload/dataOverNight?locationCode=${locationCode}`,
           formData,
           {
             headers: {
@@ -287,10 +289,7 @@ export default function Table() {
 
   const downloadTemplate = () => {
     // Buat data template
-    const templateData = [
-      ["No", "Ticket Number", "License Plate", "InTime"],
-      // Tambahkan data lainnya di sini jika perlu
-    ];
+    const templateData = [["No", "Ticket Number", "License Plate", "InTime"]];
 
     // Buat workbook dan worksheet
     const ws = XLSX.utils.aoa_to_sheet(templateData);
@@ -337,11 +336,11 @@ export default function Table() {
       };
 
       const response = await axios.put(
-        "https://dev-valetapi.skyparking.online/api/updateOutAndRemaks",
-        requestBody, // Mengirim request body secara langsung
+        "https://dev-valetapi.skyparking.onlin/api/updateOutAndRemaks",
+        requestBody,
         {
           headers: {
-            Authorization: `Bearer ${newToken}`, // Menyertakan token dalam header
+            Authorization: `Bearer ${newToken}`,
           },
         }
       );
@@ -504,7 +503,7 @@ export default function Table() {
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {!Array.isArray(data) || data.length === 0 ? (
               <tr className="text-center">
                 <td
                   colSpan={10}
@@ -514,16 +513,15 @@ export default function Table() {
                 </td>
               </tr>
             ) : (
-              data &&
               data.map((list, index) => (
-                <tr key={index} onClick={() => handleRowClick(list)}>
+                <tr key={list.Id} onClick={() => handleRowClick(list)}>
                   <td>{index + 1}</td>
                   <td>
                     {list.RefLocation && list.RefLocation.Name
                       ? list.RefLocation.Name
                       : "-"}
                   </td>
-                  <td>{list.TransactionNo}</td>
+                  <td>{list.TransactionNo ? list.TransactionNo : "-"}</td>
                   <td>
                     {list.InTime
                       ? DateTime.fromISO(list.InTime, {
@@ -531,13 +529,15 @@ export default function Table() {
                         }).toFormat("dd MMM yyyy, HH:mm:ss")
                       : "-"}
                   </td>
-                  <td>{list.Plateregognizer}</td>
-                  <td>{list.VehiclePlateNo}</td>
+                  <td>{list.Plateregognizer ? list.Plateregognizer : "-"}</td>
+                  <td>{list.VehiclePlateNo ? list.VehiclePlateNo : "-"}</td>
                   <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
                   <td>
-                    {DateTime.fromISO(list.UploadedAt, {
-                      zone: "+07:00",
-                    }).toFormat("dd MMM yyyy, HH:mm:ss")}
+                    {list.UploadedAt
+                      ? DateTime.fromISO(list.UploadedAt, {
+                          zone: "+07:00",
+                        }).toFormat("dd MMM yyyy, HH:mm:ss")
+                      : "-"}
                   </td>
                   <td>
                     {timeDifferenceFormat(list.CreatedAt, list.ModifiedOn)}
@@ -723,10 +723,10 @@ export default function Table() {
             <div className="mb-3">
               <img
                 src={
-                  `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}` ===
+                  `https://dev-valetapi.skyparking.onlin${selectedRow.PathPhotoImage}` ===
                   " "
                     ? `/notAvailable.png`
-                    : `https://dev-valetapi.skyparking.online${selectedRow.PathPhotoImage}`
+                    : `https://dev-valetapi.skyparking.onlin${selectedRow.PathPhotoImage}`
                 }
                 alt=""
                 width={150}

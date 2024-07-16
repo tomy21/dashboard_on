@@ -32,7 +32,7 @@ export default function Navbar() {
     const refreshToken = async () => {
       try {
         const response = await axios.get(
-          "https://dev-valetapi.skyparking.online/api/token",
+          "https://dev-valetapi.skyparking.onlin/api/token",
           {
             withCredentials: true,
           }
@@ -41,7 +41,6 @@ export default function Navbar() {
         const decode = jwtDecode(token);
         setName(decode.name);
         setEmail(decode.email);
-
         if (decode.exp * 1000 < Date.now()) {
           navigate("/");
           return null;
@@ -53,12 +52,22 @@ export default function Navbar() {
       }
     };
     refreshToken();
-  }, [navigate, token]);
+  }, [navigate, token, name]);
+
+  useEffect(() => {
+    const checkName = setInterval(() => {
+      if (name === "") {
+        navigate("/");
+      }
+    }, 5000); // Check name every 5 seconds
+
+    return () => clearInterval(checkName);
+  }, [name, navigate]);
 
   const handleLogout = async () => {
     try {
       setLoading(true);
-      await axios.get("https://dev-valetapi.skyparking.online/api/logout");
+      await axios.get("https://dev-valetapi.skyparking.onlin/api/logout");
       navigate("/");
     } catch (error) {
       console.log(error);
@@ -69,6 +78,7 @@ export default function Navbar() {
   if (loading) {
     return <Loading />;
   }
+
   return (
     <div className="bg-base-100 border-b">
       <div className="container navbar mx-auto flex justify-between items-center py-3">

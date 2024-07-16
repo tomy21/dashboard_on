@@ -12,13 +12,19 @@ export default function LocationList({
   if (!data || data.length === 0) {
     return <p>No location data available.</p>;
   }
-
   const options = [
-    { value: "", label: "Selected All" }, // Opsi "Selected All" dengan value kosong
-    ...data.map((location) => ({
-      value: location.Code,
-      label: location.Name,
-    })),
+    { value: "", label: "Selected All" },
+    ...(Array.isArray(data)
+      ? data.map((location) => ({
+          value: location.Code,
+          label: location.Name,
+        }))
+      : data.locationCodes && Array.isArray(data.locationCodes)
+      ? data.locationCodes.map((location) => ({
+          value: location.Code,
+          label: location.Name,
+        }))
+      : []),
   ];
 
   const handleChange = (selectedOption) => {
@@ -33,7 +39,7 @@ export default function LocationList({
       defaultValue={"selected"}
       onChange={handleChange}
       options={options}
-      className="w-1/2 md:min-w-[20vw] md:max-w-[30vw] text-xs text-black z-10 border-slate-300 text-start"
+      className="w-[20vw] md:min-w-[20vw] md:max-w-[30vw] text-xs text-black z-10 border-slate-300 text-start"
     />
   );
 }
