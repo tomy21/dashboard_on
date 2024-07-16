@@ -32,7 +32,7 @@ export default function Navbar() {
     const refreshToken = async () => {
       try {
         const response = await axios.get(
-          "https://dev-valetapi.skyparking.onlin/api/token",
+          "https://dev-valetapi.skyparking.online/api/token",
           {
             withCredentials: true,
           }
@@ -67,7 +67,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     try {
       setLoading(true);
-      await axios.get("https://dev-valetapi.skyparking.onlin/api/logout");
+      await axios.get("https://dev-valetapi.skyparking.online/api/logout");
       navigate("/");
     } catch (error) {
       console.log(error);
