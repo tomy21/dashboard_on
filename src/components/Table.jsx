@@ -89,7 +89,14 @@ export default function Table() {
 
       try {
         let locationResponse;
-        if (userId === 114) {
+        if (
+          userId === 114 ||
+          userId === 369 ||
+          userId === 370 ||
+          userId === 371 ||
+          userId === 372 ||
+          userId === 373
+        ) {
           locationResponse = await axios.get(
             `https://dev-valetapi.skyparking.online/api/getAllLocation`
           );
