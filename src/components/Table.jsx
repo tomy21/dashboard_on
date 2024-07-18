@@ -181,36 +181,44 @@ export default function Table() {
         selectLocation === ""
           ? JSON.stringify(userLocations)
           : JSON.stringify([selectLocation]);
-      const response = await axios.get(
-        `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
-        {
-          responseType: "arraybuffer",
-          headers: {
-            Authorization: `Bearer ${newToken}`,
-          },
-        }
-      );
-      const nameLocation =
-        selectLocationName === "AllLocation"
-          ? locationData
-          : selectLocationName;
-      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const fileName = `${nameLocation}_${formattedDate}.xlsx`;
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
-
-      if (response.data) {
-        toast.success("Data berhasil diunduh!", {
+      if (!selectLocation) {
+        toast.error("Silahkan pilih location dahulu", {
           position: "top-right",
         });
       } else {
-        toast.error("Gagal mengunduh data.", {
-          position: "top-right",
-        });
+        const response = await axios.get(
+          `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
+          {
+            responseType: "arraybuffer",
+            headers: {
+              Authorization: `Bearer ${newToken}`,
+            },
+          }
+        );
+        const nameLocation =
+          selectLocationName === "AllLocation"
+            ? locationData
+            : selectLocationName;
+        const downloadUrl = window.URL.createObjectURL(
+          new Blob([response.data])
+        );
+        const fileName = `${nameLocation}_${formattedDate}.xlsx`;
+        const link = document.createElement("a");
+        link.href = downloadUrl;
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        link.parentNode.removeChild(link);
+
+        if (response.data) {
+          toast.success("Data berhasil diunduh!", {
+            position: "top-right",
+          });
+        } else {
+          toast.error("Gagal mengunduh data.", {
+            position: "top-right",
+          });
+        }
       }
     } catch (error) {
       console.log(error);
