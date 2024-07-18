@@ -42,12 +42,22 @@ export default function Navbar() {
         setName(decode.name);
         setEmail(decode.email);
         if (decode.exp * 1000 < Date.now()) {
-          navigate("/");
-          return null;
+          try {
+            setLoading(true);
+            await axios.get(
+              "https://dev-valetapi.skyparking.online/api/logout"
+            );
+            navigate("/");
+            return null;
+          } catch (error) {
+            console.log(error);
+            setLoading(false);
+          }
         }
       } catch (error) {
         if (error.response) {
           navigate("/");
+          return null;
         }
       }
     };
