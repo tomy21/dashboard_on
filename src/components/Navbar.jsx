@@ -33,6 +33,7 @@ export default function Navbar() {
     const refreshToken = async () => {
       try {
         const { token, decode } = await apiAuth.refreshToken(); // Panggil refreshToken dari apiAuth
+        console.log(token);
         setToken(token);
         setName(decode.name);
         setEmail(decode.email);
