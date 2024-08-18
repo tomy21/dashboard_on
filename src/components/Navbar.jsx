@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { CiLogout } from "react-icons/ci";
-import axios from "axios";
 import Loading from "./Loading";
 import Cookies from "js-cookie";
 import { apiAuth } from "../api/apiUsers";
@@ -10,7 +9,6 @@ export default function Navbar() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
-  const location = useLocation();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -32,8 +30,7 @@ export default function Navbar() {
   useEffect(() => {
     const refreshToken = async () => {
       try {
-        const { token, decode } = await apiAuth.refreshToken(); // Panggil refreshToken dari apiAuth
-        console.log(token);
+        const { token, decode } = await apiAuth.refreshToken();
         setToken(token);
         setName(decode.name);
         setEmail(decode.email);
