@@ -35,6 +35,7 @@ export const apiAuth = {
     try {
       const response = await apiClient.get("/api/token");
       const token = response.data.accessToken;
+      console.log("refreshToken", token);
       const decode = jwtDecode(token);
       return {
         token,
