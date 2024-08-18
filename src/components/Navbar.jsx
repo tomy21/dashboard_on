@@ -4,6 +4,7 @@ import { CiLogout } from "react-icons/ci";
 import axios from "axios";
 import Loading from "./Loading";
 import { jwtDecode } from "jwt-decode";
+import Cookies from "js-cookie";
 
 export default function Navbar() {
   const [name, setName] = useState("");
@@ -65,12 +66,13 @@ export default function Navbar() {
   }, [navigate, token, name]);
 
   useEffect(() => {
+    setLoading(true);
     const checkName = setInterval(() => {
       if (name === "") {
         navigate("/");
       }
-    }, 5000); // Check name every 5 seconds
-
+    }, 10000); // Check name every 5 seconds
+    setLoading(false);
     return () => clearInterval(checkName);
   }, [name, navigate]);
 
@@ -78,6 +80,7 @@ export default function Navbar() {
     try {
       setLoading(true);
       await axios.get("https://dev-valetapi.skyparking.online/api/logout");
+      Cookies.remove("refreshToken");
       navigate("/");
     } catch (error) {
       console.log(error);
