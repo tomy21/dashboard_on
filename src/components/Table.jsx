@@ -18,6 +18,7 @@ import { LuDownloadCloud, LuUploadCloud } from "react-icons/lu";
 import LocationList from "./LocationList";
 import CardTop from "./CardTop";
 import { FaRegCalendarAlt, FaAngleDown } from "react-icons/fa";
+import { apiTable } from "../api/apiTransaction";
 
 export default function Table() {
   const [limit, setLimit] = useState(10);
@@ -57,25 +58,18 @@ export default function Table() {
 
   const refreshToken = useCallback(async () => {
     try {
-      const response = await axios.get(
-        "https://dev-valetapi.skyparking.online/api/token",
-        {
-          withCredentials: true,
-        }
-      );
-      setToken(response.data.accessToken);
-      const decode = jwtDecode(response.data.accessToken);
+      const accessToken = await apiTable.getToken(); // Panggil dari apiTable
+      setToken(accessToken);
+      const decode = jwtDecode(accessToken);
       setLocationCode(decode.locationCode);
       setUserId(decode.userId);
       if (decode.exp * 1000 < Date.now()) {
         navigate("/");
         return null;
       }
-      return response.data.accessToken;
+      return accessToken;
     } catch (error) {
-      if (error.response) {
-        navigate("/");
-      }
+      navigate("/");
     }
   }, [navigate]);
 
@@ -85,28 +79,12 @@ export default function Table() {
 
   useEffect(() => {
     const fetchLocations = async () => {
-      if (!userId) return; // Hanya jalankan jika userId sudah ada
+      if (!userId) return;
 
       try {
-        let locationResponse;
-        if (
-          userId === 114 ||
-          userId === 369 ||
-          userId === 370 ||
-          userId === 371 ||
-          userId === 372 ||
-          userId === 373
-        ) {
-          locationResponse = await axios.get(
-            `https://dev-valetapi.skyparking.online/api/getAllLocation`
-          );
-        } else {
-          locationResponse = await axios.get(
-            `https://dev-valetapi.skyparking.online/api/getByLocation?userId=${userId}`
-          );
-        }
-        setLocation(locationResponse.data || []); // Sesuaikan dengan struktur data dari API
-        setUserLocations(locationResponse.data || []); // Sesuaikan dengan struktur data dari API
+        const locationResponse = await apiTable.fetchLocations(userId); // Panggil dari apiTable
+        setLocation(locationResponse || []);
+        setUserLocations(locationResponse || []);
       } catch (error) {
         console.log(error);
       }
@@ -118,29 +96,20 @@ export default function Table() {
   const getData = useCallback(
     async (accessToken) => {
       try {
-        const codes = Array.isArray(locationData)
-          ? locationData.map((location) => location.Code)
-          : locationData.locationCodes &&
-            Array.isArray(locationData.locationCodes)
-          ? locationData.locationCodes.map((location) => location.Code)
-          : [];
-        const locationParam =
-          selectLocation === ""
-            ? JSON.stringify(codes)
-            : JSON.stringify([selectLocation]);
-        const responseData = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/getDatabyLocation?limit=${limit}&location=${locationParam}&page=${pages}&keyword=${search}&date=${formattedDate}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-        setData(responseData.data.data);
-        setTotalPages(responseData.data.totalPages);
-        setCountData(responseData.data.totalItems);
-        setTotalCount(responseData.data.summary[0].TotalCount);
-        setInArea(responseData.data.summary[0].InareaCount);
+        const responseData = await apiTable.getData(
+          limit,
+          selectLocation,
+          pages,
+          search,
+          formattedDate,
+          locationData,
+          accessToken
+        ); // Panggil dari apiTable
+        setData(responseData.data);
+        setTotalPages(responseData.totalPages);
+        setCountData(responseData.totalItems);
+        setTotalCount(responseData.summary[0].TotalCount);
+        setInArea(responseData.summary[0].InareaCount);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -177,49 +146,26 @@ export default function Table() {
     try {
       setIsLoading(true);
       const newToken = await refreshToken();
-      const locationParam =
-        selectLocation === ""
-          ? JSON.stringify(userLocations)
-          : JSON.stringify([selectLocation]);
-      if (!selectLocation) {
-        toast.error("Silahkan pilih location dahulu", {
-          position: "top-right",
-        });
-      } else {
-        const response = await axios.get(
-          `https://dev-valetapi.skyparking.online/api/exportDataOn?location=${locationParam}&date=${formattedDate}`,
-          {
-            responseType: "arraybuffer",
-            headers: {
-              Authorization: `Bearer ${newToken}`,
-            },
-          }
-        );
-        const nameLocation =
-          selectLocationName === "AllLocation"
-            ? locationData
-            : selectLocationName;
-        const downloadUrl = window.URL.createObjectURL(
-          new Blob([response.data])
-        );
-        const fileName = `${nameLocation}_${formattedDate}.xlsx`;
-        const link = document.createElement("a");
-        link.href = downloadUrl;
-        link.setAttribute("download", fileName);
-        document.body.appendChild(link);
-        link.click();
-        link.parentNode.removeChild(link);
+      const { blob, fileName } = await apiTable.handleExport(
+        selectLocation,
+        userLocations,
+        formattedDate,
+        selectLocationName,
+        locationData,
+        newToken
+      ); // Panggil dari apiTable
 
-        if (response.data) {
-          toast.success("Data berhasil diunduh!", {
-            position: "top-right",
-          });
-        } else {
-          toast.error("Gagal mengunduh data.", {
-            position: "top-right",
-          });
-        }
-      }
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+
+      toast.success("Data berhasil diunduh!", {
+        position: "top-right",
+      });
     } catch (error) {
       console.log(error);
       toast.error("Terjadi kesalahan saat mengunduh data.", {
@@ -260,42 +206,19 @@ export default function Table() {
 
       try {
         const newToken = await refreshToken(); // Refresh token before upload
+        await apiTable.uploadFile(locationCode, formData, newToken); // Panggil dari apiTable
 
-        const response = await axios.post(
-          `https://dev-valetapi.skyparking.online/api/upload/dataOverNight?locationCode=${locationCode}`,
-          formData,
-          {
-            headers: {
-              Authorization: `Bearer ${newToken}`, // Use new token here
-              "Content-Type": "multipart/form-data",
-            },
-            onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              console.log(`Upload progress: ${percentCompleted}%`);
-            },
-          }
-        );
-
-        if (response.status === 200) {
-          setIsLoading(false);
-          toast.success("File uploaded successfully!", {
-            position: "top-right",
-          });
-          await getData(newToken); // Pass the new token to getData
-          closeModal();
-        } else {
-          setIsLoading(false);
-          setError("File upload failed. Please try again.");
-        }
+        toast.success("File uploaded successfully!", {
+          position: "top-right",
+        });
+        await getData(newToken); // Pass the new token to getData
+        closeModal();
       } catch (error) {
         setError("An error occurred during file upload. Please try again.");
         console.error("File upload error:", error);
         setIsLoading(false);
       }
 
-      console.log("File uploaded:", file);
       closeModal();
     } else {
       setError("Please select a valid Excel file.");
@@ -342,35 +265,18 @@ export default function Table() {
     try {
       const newToken = await refreshToken();
       const decode = jwtDecode(newToken);
+      await apiTable.updateData(
+        outTime,
+        remarks,
+        decode.name,
+        selectedRow.Id,
+        newToken
+      ); // Panggil dari apiTable
 
-      const requestBody = {
-        outTime: outTime,
-        remaks: remarks,
-        officer: decode.name,
-        idTransaction: selectedRow.Id,
-      };
-
-      const response = await axios.put(
-        "https://dev-valetapi.skyparking.online/api/updateOutAndRemaks",
-        requestBody,
-        {
-          headers: {
-            Authorization: `Bearer ${newToken}`,
-          },
-        }
-      );
-
-      if (response.status === 200) {
-        toast.success("Data updated successfully!", {
-          position: "top-right",
-        });
-      } else {
-        toast.error("Failed to update data. Please try again.", {
-          position: "top-right",
-        });
-      }
+      toast.success("Data updated successfully!", {
+        position: "top-right",
+      });
       await getData(newToken);
-      setIsLoading(false);
       handleModalClose();
     } catch (error) {
       setIsLoading(false);

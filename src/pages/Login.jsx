@@ -1,9 +1,8 @@
-import axios from "axios";
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MdOutlineRefresh } from "react-icons/md";
-import CryptoJS from "crypto-js";
 import { ScaleLoader } from "react-spinners";
+import { apiUsers } from "../api/apiUsers";
 
 export default function Login() {
   const [captcha, setCaptcha] = useState("");
@@ -14,7 +13,7 @@ export default function Login() {
   const [valid, setValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
   const navigate = useNavigate();
-  const key = "PARTNER_KEY";
+  const key = process.env.REACT_APP_ENCRYPTION_KEY;
 
   const refreshString = () => {
     setCaptcha(Math.random().toString(36).slice(2, 8));
@@ -31,33 +30,10 @@ export default function Login() {
       setLoading(true);
       setValid(true);
       try {
-        const dataLogin = {
-          email: email,
-          password: password,
-        };
-
-        const encrypData = CryptoJS.AES.encrypt(
-          JSON.stringify(dataLogin),
-          key
-        ).toString();
-
-        await axios.post(
-          "https://dev-valetapi.skyparking.online/api/login",
-          {
-            data: encrypData,
-          },
-          { withCredentials: true }
-        );
-
+        await apiUsers.login(email, password, key);
         navigate("/transaction");
-        setLoading(false);
       } catch (error) {
-        if (error.response) {
-          setErrorMessage(error.response.data.msg || "Login failed");
-        } else {
-          // Handle other errors (network issues, etc.)
-          setErrorMessage("An error occurred. Please try again.");
-        }
+        setErrorMessage(error.message);
       } finally {
         setLoading(false);
       }
@@ -65,6 +41,7 @@ export default function Login() {
       setValid(false);
     }
   };
+
   return (
     <>
       <main className="flex min-h-screen flex-col items-center justify-between p-6 md:p-20">

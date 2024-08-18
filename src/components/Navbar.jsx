@@ -3,8 +3,8 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { CiLogout } from "react-icons/ci";
 import axios from "axios";
 import Loading from "./Loading";
-import { jwtDecode } from "jwt-decode";
 import Cookies from "js-cookie";
+import { apiAuth } from "../api/apiUsers";
 
 export default function Navbar() {
   const [name, setName] = useState("");
@@ -14,72 +14,62 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const menuItems = [
-    // {
-    //   title: "Dashboard",
-    //   path: "/dashboard",
-    // },
-    // {
-    //   title: "Transaction",
-    //   path: "/transaction",
-    // },
-    // {
-    //   title: "Users",
-    //   path: "/dashboard",
-    // },
-  ];
+  // const menuItems = [
+  // {
+  //   title: "Dashboard",
+  //   path: "/dashboard",
+  // },
+  // {
+  //   title: "Transaction",
+  //   path: "/transaction",
+  // },
+  // {
+  //   title: "Users",
+  //   path: "/dashboard",
+  // },
+  // ];
 
   useEffect(() => {
     const refreshToken = async () => {
       try {
-        const response = await axios.get(
-          "https://dev-valetapi.skyparking.online/api/token",
-          {
-            withCredentials: true,
-          }
-        );
-        setToken(response.data.accessToken);
-        const decode = jwtDecode(token);
+        const { token, decode } = await apiAuth.refreshToken(); // Panggil refreshToken dari apiAuth
+        setToken(token);
         setName(decode.name);
         setEmail(decode.email);
+
         if (decode.exp * 1000 < Date.now()) {
           try {
             setLoading(true);
-            await axios.get(
-              "https://dev-valetapi.skyparking.online/api/logout"
-            );
+            await apiAuth.logout(); // Panggil logout dari apiAuth
             navigate("/");
-            return null;
           } catch (error) {
             console.log(error);
             setLoading(false);
           }
         }
       } catch (error) {
-        if (error.response) {
-          navigate("/");
-          return null;
-        }
-      }
-    };
-    refreshToken();
-  }, [navigate, token, name]);
-
-  useEffect(() => {
-    setLoading(true);
-    const checkName = setInterval(() => {
-      if (name === "") {
         navigate("/");
       }
-    }, 10000); // Check name every 5 seconds
-    setLoading(false);
-    return () => clearInterval(checkName);
-  }, [name, navigate]);
+    };
+
+    refreshToken();
+  }, [navigate]);
+
+  // useEffect(() => {
+  //   setLoading(true);
+  //   const checkName = setInterval(() => {
+  //     if (name === "") {
+  //       navigate("/");
+  //     }
+  //   }, 10000); // Check name every 5 seconds
+  //   setLoading(false);
+  //   return () => clearInterval(checkName);
+  // }, [name, navigate]);
 
   const handleLogout = async () => {
     try {
       setLoading(true);
-      await axios.get("https://dev-valetapi.skyparking.online/api/logout");
+      await apiAuth.logout();
       Cookies.remove("refreshToken");
       navigate("/");
     } catch (error) {
@@ -103,7 +93,7 @@ export default function Navbar() {
             </div>
           </div>
           <div className="flex-auto flex-row">
-            <ul className="flex flex-row gap-2">
+            {/* <ul className="flex flex-row gap-2">
               {menuItems.map((list) => (
                 <li
                   key={list.title}
@@ -114,7 +104,7 @@ export default function Navbar() {
                   <Link to={list.path}>{list.title}</Link>
                 </li>
               ))}
-            </ul>
+            </ul> */}
           </div>
         </div>
 
