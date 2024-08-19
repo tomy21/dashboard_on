@@ -78,7 +78,7 @@ export const apiTable = {
 
     const nameLocation =
       selectLocationName === "AllLocation" ? locationData : selectLocationName;
-    const fileName = `${nameLocation}_${formattedDate}.xls`; // Ubah dari .xlsx ke .xls
+    const fileName = `${nameLocation}_${formattedDate}.xlsx`;
 
     return {
       blob: new Blob([response.data]),
