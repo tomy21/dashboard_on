@@ -54,11 +54,10 @@ export const apiTable = {
 
   handleExport: async (
     selectLocation,
-    userLocations,
     formattedDate,
+    userLocations,
     selectLocationName,
-    locationData,
-    accessToken
+    locationData
   ) => {
     const locationParam =
       selectLocation === ""
@@ -66,10 +65,7 @@ export const apiTable = {
         : JSON.stringify([selectLocation]);
 
     const response = await apiClient.get(`/api/exportDataOn`, {
-      responseType: "arraybuffer",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
+      responseType: "arraybuffer", // Menggunakan arraybuffer untuk file
       params: {
         location: locationParam,
         date: formattedDate,
@@ -81,7 +77,9 @@ export const apiTable = {
     const fileName = `${nameLocation}_${formattedDate}.xlsx`;
 
     return {
-      blob: new Blob([response.data]),
+      blob: new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      }),
       fileName,
     };
   },

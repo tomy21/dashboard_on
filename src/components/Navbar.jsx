@@ -3,12 +3,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { CiLogout } from "react-icons/ci";
 import Loading from "./Loading";
 import Cookies from "js-cookie";
-import { apiAuth } from "../api/apiUsers";
+import { apiAuth, apiUsers } from "../api/apiUsers";
+import { jwtDecode } from "jwt-decode";
 
 export default function Navbar() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
+  const [idUser, setIdUser] = useState(null);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
@@ -28,41 +30,19 @@ export default function Navbar() {
   // ];
 
   useEffect(() => {
-    const refreshToken = async () => {
-      try {
-        const { token, decode } = await apiAuth.refreshToken();
-        setToken(token);
-        setName(decode.name);
-        setEmail(decode.email);
-
-        if (decode.exp * 1000 < Date.now()) {
-          try {
-            setLoading(true);
-            await apiAuth.logout(); // Panggil logout dari apiAuth
-            navigate("/");
-          } catch (error) {
-            console.log(error);
-            setLoading(false);
-          }
-        }
-      } catch (error) {
+    const fetchToken = async () => {
+      const token = Cookies.get("refreshToken");
+      if (!token) {
         navigate("/");
+      } else {
+        const decodedToken = jwtDecode(token);
+        setIdUser(decodedToken.Id);
+        setEmail(decodedToken.email);
+        setName(decodedToken.sub);
       }
     };
-
-    refreshToken();
+    fetchToken();
   }, [navigate]);
-
-  // useEffect(() => {
-  //   setLoading(true);
-  //   const checkName = setInterval(() => {
-  //     if (name === "") {
-  //       navigate("/");
-  //     }
-  //   }, 10000); // Check name every 5 seconds
-  //   setLoading(false);
-  //   return () => clearInterval(checkName);
-  // }, [name, navigate]);
 
   const handleLogout = async () => {
     try {

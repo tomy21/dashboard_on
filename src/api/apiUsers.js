@@ -1,22 +1,12 @@
 import { apiClient } from "./apiClient";
-import CryptoJS from "crypto-js";
 import { jwtDecode } from "jwt-decode";
 
 export const apiUsers = {
-  login: async (email, password, key) => {
+  login: async (identifier, password) => {
     try {
-      const dataLogin = {
-        email: email,
-        password: password,
-      };
-
-      const encrypData = CryptoJS.AES.encrypt(
-        JSON.stringify(dataLogin),
-        key
-      ).toString();
-
       const response = await apiClient.post("/api/login", {
-        data: encrypData,
+        identifier: identifier,
+        password: password,
       });
 
       return response.data;
@@ -26,6 +16,17 @@ export const apiUsers = {
       } else {
         throw new Error("An error occurred. Please try again.");
       }
+    }
+  },
+
+  getUserbyId: async (userId) => {
+    try {
+      const response = await apiClient.get("api/getByLocation", {
+        params: { userId },
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error("An error occurred. Please try again.");
     }
   },
 };

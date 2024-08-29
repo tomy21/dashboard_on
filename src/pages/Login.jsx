@@ -13,7 +13,6 @@ export default function Login() {
   const [valid, setValid] = useState(false);
   const [errorMessage, setErrorMessage] = useState(false);
   const navigate = useNavigate();
-  const key = process.env.REACT_APP_ENCRYPTION_KEY;
 
   const refreshString = () => {
     setCaptcha(Math.random().toString(36).slice(2, 8));
@@ -30,7 +29,7 @@ export default function Login() {
       setLoading(true);
       setValid(true);
       try {
-        await apiUsers.login(email, password, key);
+        await apiUsers.login(email, password);
         navigate("/transaction");
       } catch (error) {
         setErrorMessage(error.message);

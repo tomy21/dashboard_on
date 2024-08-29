@@ -19,6 +19,7 @@ import LocationList from "./LocationList";
 import CardTop from "./CardTop";
 import { FaRegCalendarAlt, FaAngleDown } from "react-icons/fa";
 import { apiTable } from "../api/apiTransaction";
+import Cookies from "js-cookie";
 
 export default function Table() {
   const [limit, setLimit] = useState(10);
@@ -26,8 +27,6 @@ export default function Table() {
   const [startDate, setStartDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(null);
   const [search, setSearch] = useState("");
-  const [token, setToken] = useState("");
-  const [locationCode, setLocationCode] = useState("");
   const [locationData, setLocation] = useState("");
   const [selectLocation, setSelectLocation] = useState("");
   const [selectLocationName, setSelectLocationName] = useState("");
@@ -58,16 +57,14 @@ export default function Table() {
 
   const refreshToken = useCallback(async () => {
     try {
-      const accessToken = await apiTable.getToken(); // Panggil dari apiTable
-      setToken(accessToken);
-      const decode = jwtDecode(accessToken);
-      setLocationCode(decode.locationCode);
-      setUserId(decode.userId);
+      const token = Cookies.get("refreshToken");
+      const decode = jwtDecode(token);
+      setUserId(decode.Id);
       if (decode.exp * 1000 < Date.now()) {
         navigate("/");
         return null;
       }
-      return accessToken;
+      return token;
     } catch (error) {
       navigate("/");
     }
@@ -82,7 +79,8 @@ export default function Table() {
       if (!userId) return;
 
       try {
-        const locationResponse = await apiTable.fetchLocations(userId); // Panggil dari apiTable
+        const locationResponse = await apiTable.fetchLocations(userId);
+        console.log("location", locationResponse);
         setLocation(locationResponse || []);
         setUserLocations(locationResponse || []);
       } catch (error) {
@@ -145,23 +143,22 @@ export default function Table() {
   const handleExport = async () => {
     try {
       setIsLoading(true);
-      const newToken = await refreshToken();
+
       const { blob, fileName } = await apiTable.handleExport(
         selectLocation,
-        userLocations,
         formattedDate,
+        userLocations,
         selectLocationName,
-        locationData,
-        newToken
-      ); // Panggil dari apiTable
+        locationData
+      );
 
-      const downloadUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.setAttribute("download", fileName);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode.removeChild(link);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = fileName;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
 
       toast.success("Data berhasil diunduh!", {
         position: "top-right",
@@ -171,7 +168,6 @@ export default function Table() {
       toast.error("Terjadi kesalahan saat mengunduh data.", {
         position: "top-right",
       });
-      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -197,33 +193,33 @@ export default function Table() {
     }
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setIsLoading(true);
-    if (file) {
-      const formData = new FormData();
-      formData.append("file", file);
+  // const handleSubmit = async (event) => {
+  //   event.preventDefault();
+  //   setIsLoading(true);
+  //   if (file) {
+  //     const formData = new FormData();
+  //     formData.append("file", file);
 
-      try {
-        const newToken = await refreshToken(); // Refresh token before upload
-        await apiTable.uploadFile(locationCode, formData, newToken); // Panggil dari apiTable
+  //     try {
+  //       const newToken = await refreshToken(); // Refresh token before upload
+  //       await apiTable.uploadFile(locationCode, formData, newToken); // Panggil dari apiTable
 
-        toast.success("File uploaded successfully!", {
-          position: "top-right",
-        });
-        await getData(newToken); // Pass the new token to getData
-        closeModal();
-      } catch (error) {
-        setError("An error occurred during file upload. Please try again.");
-        console.error("File upload error:", error);
-        setIsLoading(false);
-      }
+  //       toast.success("File uploaded successfully!", {
+  //         position: "top-right",
+  //       });
+  //       await getData(newToken); // Pass the new token to getData
+  //       closeModal();
+  //     } catch (error) {
+  //       setError("An error occurred during file upload. Please try again.");
+  //       console.error("File upload error:", error);
+  //       setIsLoading(false);
+  //     }
 
-      closeModal();
-    } else {
-      setError("Please select a valid Excel file.");
-    }
-  };
+  //     closeModal();
+  //   } else {
+  //     setError("Please select a valid Excel file.");
+  //   }
+  // };
 
   const downloadTemplate = () => {
     // Buat data template
@@ -382,7 +378,7 @@ export default function Table() {
           />
         </div>
         <div className="flex flex-row gap-3">
-          <button
+          {/* <button
             className="flex flex-row justify-center items-center gap-x-2 text-red-700 hover:text-red-500 cursor-pointer text-sm"
             onClick={downloadTemplate}
           >
@@ -395,7 +391,7 @@ export default function Table() {
           >
             <LuUploadCloud />
             <p>Upload</p>
-          </button>
+          </button> */}
           <button
             type="button"
             onClick={handleExport}
@@ -550,7 +546,7 @@ export default function Table() {
           </div>
         </div>
       </div>
-      <Transition.Root show={isOpen} as={Fragment}>
+      {/* <Transition.Root show={isOpen} as={Fragment}>
         <Dialog as="div" className="relative z-10" onClose={closeModal}>
           <Transition.Child
             as={Fragment}
@@ -623,7 +619,7 @@ export default function Table() {
             </div>
           </div>
         </Dialog>
-      </Transition.Root>
+      </Transition.Root> */}
 
       {isLoading && (
         <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
