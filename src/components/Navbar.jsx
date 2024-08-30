@@ -32,6 +32,7 @@ export default function Navbar() {
   useEffect(() => {
     const fetchToken = async () => {
       const token = Cookies.get("refreshToken");
+      console.log(token);
       if (!token) {
         navigate("/");
       } else {
