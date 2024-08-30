@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { MdOutlineRefresh } from "react-icons/md";
 import { ScaleLoader } from "react-spinners";
 import { apiUsers } from "../api/apiUsers";
+import Cookies from "js-cookie";
 
 export default function Login() {
   const [captcha, setCaptcha] = useState("");
@@ -29,7 +30,9 @@ export default function Login() {
       setLoading(true);
       setValid(true);
       try {
-        await apiUsers.login(email, password);
+        const response = await apiUsers.login(email, password);
+        const token = response.token;
+        Cookies.set("refreshToken", token);
         navigate("/transaction");
       } catch (error) {
         setErrorMessage(error.message);
