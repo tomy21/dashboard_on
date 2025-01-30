@@ -11,7 +11,7 @@ services:
     environment:
       - PORT=4001
     ports:
-      - "8092:4001"
+      - "9211:4001"
     # command: npm install cookie-parser && npm start
     networks:
       - backend_network

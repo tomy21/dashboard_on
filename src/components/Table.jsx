@@ -1,718 +1,818 @@
-import React, { Fragment, useCallback, useEffect, useState } from "react";
-import * as XLSX from "xlsx";
-import { saveAs } from "file-saver";
-import axios from "axios";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
-import { toast, ToastContainer } from "react-toastify";
-import ReactPagination from "react-paginate";
-import "react-toastify/dist/ReactToastify.css";
-import { HiOutlineDownload } from "react-icons/hi";
-import { ScaleLoader } from "react-spinners";
-import { DateTime } from "luxon";
-import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode";
-import { Dialog, Transition } from "@headlessui/react";
-import { ExclamationIcon } from "@heroicons/react/outline";
-import { LuDownloadCloud, LuUploadCloud } from "react-icons/lu";
-import LocationList from "./LocationList";
-import CardTop from "./CardTop";
-import { FaRegCalendarAlt, FaAngleDown } from "react-icons/fa";
-import { apiTable } from "../api/apiTransaction";
-import Cookies from "js-cookie";
+import React, { useEffect, useState } from 'react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { toast, ToastContainer } from 'react-toastify';
+import ReactPagination from 'react-paginate';
+import 'react-toastify/dist/ReactToastify.css';
+import { HiOutlineDownload } from 'react-icons/hi';
+import { ScaleLoader } from 'react-spinners';
+import { DateTime } from 'luxon';
+import LocationList from './LocationList';
+import { apiTable } from '../api/apiTransaction';
+import CustomInput from './CustomeInput';
+import Dropwdown from './Dropdown';
 
 export default function Table() {
-  const [limit, setLimit] = useState(10);
-  const [pages, setPages] = useState(0);
-  const [startDate, setStartDate] = useState(new Date());
-  const [isLoading, setIsLoading] = useState(null);
-  const [search, setSearch] = useState("");
-  const [locationData, setLocation] = useState("");
-  const [selectLocation, setSelectLocation] = useState("");
-  const [selectLocationName, setSelectLocationName] = useState("");
-  const [data, setData] = useState([]);
-  const [totalPages, setTotalPages] = useState(1);
-  const [countData, setCountData] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-  const [inArea, setInArea] = useState(0);
-  const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
-  const [file, setFile] = useState(null);
-  const [error, setError] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState(null);
-  const [outTime, setOutTime] = useState("");
-  const [remarks, setRemarks] = useState("");
-  const [userId, setUserId] = useState(0);
-  const [userLocations, setUserLocations] = useState([]);
+    const [limit, setLimit] = useState(10);
+    const [pages, setPages] = useState(0);
+    const [startDate, setStartDate] = useState(new Date());
+    const [startDateExport, setStartDateExport] = useState(new Date());
+    const [isLoading, setIsLoading] = useState(null);
+    const [search, setSearch] = useState('');
+    const [locationData, setLocation] = useState('');
+    const [selectLocation, setSelectLocation] = useState('');
+    const [selectLocationName, setSelectLocationName] = useState('');
+    const [data, setData] = useState([]);
+    const [totalPages, setTotalPages] = useState(1);
+    const [countData, setCountData] = useState(0);
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalGetDataPOST, setModalGetDataPOST] = useState(false);
+    const [selectedRow, setSelectedRow] = useState(null);
+    const [remarks, setRemarks] = useState('');
+    const [userLocations, setUserLocations] = useState([]);
+    const [loading, setLoading] = useState(false); // Untuk loading state
+    const [progress, setProgress] = useState(0); // Untuk progress line
+    const [showToast, setShowToast] = useState(false); // Untuk menampilkan toast
+    const [modalExport, setModalExport] = useState(false);
 
-  const openModal = () => setIsOpen(true);
-  const closeModal = () => {
-    setIsOpen(false);
-    setFile(null);
-    setError("");
-  };
-  const dateTime = DateTime.fromJSDate(startDate, { zone: "Asia/Jakarta" });
-  const formattedDate = dateTime.toFormat("yyyy-MM-dd");
+    const dateTime = DateTime.fromJSDate(startDate, { zone: 'Asia/Jakarta' });
+    const formattedDate = dateTime.toFormat('yyyy-MM-dd');
 
-  const refreshToken = useCallback(async () => {
-    try {
-      const token = Cookies.get("refreshToken");
-      const decode = jwtDecode(token);
-      setUserId(decode.Id);
-      if (decode.exp * 1000 < Date.now()) {
-        navigate("/");
-        return null;
-      }
-      return token;
-    } catch (error) {
-      navigate("/");
-    }
-  }, [navigate]);
+    const dateTimeExport = DateTime.fromJSDate(startDateExport, {
+        zone: 'Asia/Jakarta',
+    });
+    const formattedDateExport = dateTimeExport.toFormat('yyyy-MM-dd');
 
-  useEffect(() => {
-    refreshToken();
-  }, [refreshToken]);
+    useEffect(() => {
+        fetchData();
+        fetchLocations();
+    }, [pages, limit, formattedDate, search]);
 
-  useEffect(() => {
     const fetchLocations = async () => {
-      if (!userId) return;
-
-      try {
-        const locationResponse = await apiTable.fetchLocations(userId);
-        console.log("location", locationResponse);
-        setLocation(locationResponse || []);
-        setUserLocations(locationResponse || []);
-      } catch (error) {
-        console.log(error);
-      }
+        try {
+            const locationResponse = await apiTable.fetchLocations();
+            setLocation(locationResponse.UsersLocations);
+            setUserLocations(locationResponse || []);
+        } catch (error) {
+            console.log(error);
+        }
     };
 
-    fetchLocations();
-  }, [userId]);
+    const fetchData = async () => {
+        try {
+            const response = await apiTable.getLocationByUsers(
+                pages,
+                limit,
+                formattedDate,
+                search
+            );
+            console.log(response);
+            setData(response.data.transaction);
+            setTotalPages(response.data.totalPages);
+            setCountData(response.data.total);
+        } catch (error) {
+            console.log(error);
+        }
+    };
 
-  const getData = useCallback(
-    async (accessToken) => {
-      try {
-        const responseData = await apiTable.getData(
-          limit,
-          selectLocation,
-          pages,
-          search,
-          formattedDate,
-          locationData,
-          accessToken
-        ); // Panggil dari apiTable
-        setData(responseData.data);
-        setTotalPages(responseData.totalPages);
-        setCountData(responseData.totalItems);
-        setTotalCount(responseData.summary[0].TotalCount);
-        setInArea(responseData.summary[0].InareaCount);
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      }
-    },
-    [limit, selectLocation, pages, search, formattedDate, locationData]
-  );
+    const changePage = ({ selected }) => {
+        setPages(selected + 1);
+    };
 
-  const changePage = ({ selected }) => {
-    setPages(selected + 1);
-  };
+    const handleLimit = (event) => {
+        const selectedLimit = parseInt(event.target.value);
+        const newTotalPages = Math.ceil(countData / selectedLimit);
 
-  useEffect(() => {
-    refreshToken().then((accessToken) => {
-      if (accessToken) {
-        getData(accessToken);
-      }
-    });
-  }, [refreshToken, getData]);
+        setLimit(selectedLimit);
 
-  const handleLimit = (event) => {
-    const selectedLimit = parseInt(event.target.value);
-    const newTotalPages = Math.ceil(countData / selectedLimit);
+        if (pages > newTotalPages) {
+            setPages(1);
+        } else {
+            changePage({ selected: 0 });
+        }
+    };
 
-    setLimit(selectedLimit);
+    const handleExport = async () => {
+        setIsLoading(true);
+        try {
+            const { blob, fileName } = await apiTable.handleExport(
+                selectLocation,
+                formattedDateExport,
+                userLocations,
+                selectLocationName,
+                locationData
+            );
 
-    if (pages > newTotalPages) {
-      setPages(1);
-    } else {
-      changePage({ selected: 0 });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = fileName;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            toast.success('Data berhasil diunduh!', {
+                position: 'top-right',
+            });
+            setStartDateExport(new Date());
+            setModalExport(false);
+        } catch (error) {
+            console.log(error);
+            toast.error('Terjadi kesalahan saat mengunduh data.', {
+                position: 'top-right',
+            });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleCloseModalExport = () => {
+        setModalExport(false);
+        setStartDateExport(new Date());
+    };
+    // console.log(locationData);
+    const handleSearchChange = (event) => {
+        setSearch(event.target.value);
+    };
+
+    const handleRowClick = (row) => {
+        setSelectedRow(row);
+
+        setRemarks(row.Remarks || '');
+        setIsModalOpen(true);
+    };
+
+    const handleModalClose = () => {
+        setIsModalOpen(false);
+        setSelectedRow(null);
+    };
+
+    const handleSave = async (idData) => {
+        setIsLoading(true);
+        try {
+            const response = await apiTable.updateData(
+                idData,
+                selectedCategory.Name,
+                remarks.Name
+            );
+            if (response.statusCode === 200) {
+                setIsLoading(false);
+                setIsModalOpen(false);
+                toast.success('Data berhasil disimpan!', {
+                    position: 'top-right',
+                });
+                fetchData();
+                setSelectedCategory('');
+            } else {
+                toast.error('Terjadi kesalahan saat menyimpan data.', {
+                    position: 'top-right',
+                });
+                setIsModalOpen(false);
+                setIsLoading(false);
+                fetchData();
+                setSelectedCategory('');
+            }
+        } catch (error) {
+            setIsLoading(false);
+            toast.error('An error occurred during update. Please try again.', {
+                position: 'top-right',
+            });
+            console.error('Error updating data:', error);
+        }
+    };
+
+    const handleLocationSelect = (locCode) => {
+        setSelectLocation(locCode);
+    };
+
+    const handleLocationNameSelect = (locName) => {
+        setSelectLocationName(locName);
+    };
+
+    const Category = [
+        { value: 'Inap', label: 'Inap' },
+        { value: 'Lost Ticket', label: 'Lost Ticket' },
+        { value: 'IT', label: 'IT' },
+        { value: 'Tidak Teridentifikasi', label: 'Tidak Teridentifikasi' },
+        { value: 'Lain-lain', label: 'Lain-lain' },
+    ];
+
+    const IT = [
+        { value: 'Printer', label: 'Printer' },
+        { value: 'Jaringan', label: 'Jaringan' },
+        { value: 'Offline', label: 'Offline' },
+        { value: 'Voucher', label: 'Voucher' },
+        { value: 'Member', label: 'Member' },
+        { value: 'Test Ticket', label: 'Test Ticket' },
+        { value: 'System', label: 'System' },
+        { value: 'Double Ticket', label: 'Double Ticket' },
+        { value: 'Double Payment', label: 'Double Payment' },
+    ];
+
+    const LainLain = [
+        { value: 'Tenant', label: 'Tenant' },
+        { value: 'Proyek', label: 'Proyek' },
+        { value: 'Mobil Oprational', label: 'Mobil Oprational' },
+        { value: 'listrik Padam', label: 'listrik Padam' },
+    ];
+
+    const listCategory = Array.isArray(Category)
+        ? [
+              ...new Set(
+                  Category.map((item) => ({
+                      Code: item.value,
+                      Name: item.label,
+                  }))
+              ),
+          ]
+        : [];
+
+    let listRemaks = [];
+    if (selectedCategory) {
+        if (selectedCategory.Code === 'IT') {
+            listRemaks = Array.isArray(IT)
+                ? [
+                      ...new Set(
+                          IT.map((item) => ({
+                              Code: item.value,
+                              Name: item.label,
+                          }))
+                      ),
+                  ]
+                : [];
+        } else if (selectedCategory.Code === 'Lain-lain') {
+            listRemaks = Array.isArray(LainLain)
+                ? [
+                      ...new Set(
+                          LainLain.map((item) => ({
+                              Code: item.value,
+                              Name: item.label,
+                          }))
+                      ),
+                  ]
+                : [];
+        } else {
+            listRemaks = [];
+        }
     }
-  };
 
-  const handleExport = async () => {
-    try {
-      setIsLoading(true);
+    const timeDifferenceFormat = (startDateTime, endDateTime) => {
+        const start = DateTime.fromISO(startDateTime, { zone: '+07:00' });
+        const end = DateTime.fromISO(endDateTime, { zone: '+07:00' });
 
-      const { blob, fileName } = await apiTable.handleExport(
-        selectLocation,
-        formattedDate,
-        userLocations,
-        selectLocationName,
-        locationData
-      );
+        const diff = end.diff(start, ['days', 'hours', 'minutes']);
+        const { days, hours, minutes } = diff.toObject();
 
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
+        return `${Math.floor(days)} d, ${Math.floor(hours)} h, ${Math.floor(
+            minutes
+        )} m`;
+    };
 
-      toast.success("Data berhasil diunduh!", {
-        position: "top-right",
-      });
-    } catch (error) {
-      console.log(error);
-      toast.error("Terjadi kesalahan saat mengunduh data.", {
-        position: "top-right",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  // console.log(locationData);
-  const handleSearchChange = (event) => {
-    setSearch(event.target.value);
-  };
+    const handleGetDataPOST = async () => {
+        setLoading(true);
+        setProgress(0);
+        setShowToast(false);
 
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    const fileType = selectedFile.type;
-    if (
-      fileType ===
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-      fileType === "application/vnd.ms-excel"
-    ) {
-      setFile(selectedFile);
-      setError("");
-    } else {
-      setFile(null);
-      setError("Only Excel files are allowed.");
-    }
-  };
+        const interval = setInterval(() => {
+            setProgress((oldProgress) => {
+                const newProgress = oldProgress + 10;
+                return newProgress >= 100 ? 100 : newProgress;
+            });
+        }, 200);
 
-  // const handleSubmit = async (event) => {
-  //   event.preventDefault();
-  //   setIsLoading(true);
-  //   if (file) {
-  //     const formData = new FormData();
-  //     formData.append("file", file);
+        try {
+            const response = await apiTable.getDataPOST(selectLocation);
+            if (response.status === 200) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                setModalGetDataPOST(false);
+                setShowToast(true);
+                setMessage(response.data.message);
+                setTimeout(() => {
+                    setShowToast(false);
+                }, 2000);
+                fetchData();
+            } else {
+                setError(true);
+                setMessage(response.data.message);
+            }
+        } catch (error) {
+            setError(true);
+            setMessage(error);
+        } finally {
+            clearInterval(interval); // Hentikan progress bar
+            setLoading(false); // Hilangkan modal loading
+        }
+    };
 
-  //     try {
-  //       const newToken = await refreshToken(); // Refresh token before upload
-  //       await apiTable.uploadFile(locationCode, formData, newToken); // Panggil dari apiTable
+    return (
+        <div>
+            <ToastContainer />
 
-  //       toast.success("File uploaded successfully!", {
-  //         position: "top-right",
-  //       });
-  //       await getData(newToken); // Pass the new token to getData
-  //       closeModal();
-  //     } catch (error) {
-  //       setError("An error occurred during file upload. Please try again.");
-  //       console.error("File upload error:", error);
-  //       setIsLoading(false);
-  //     }
+            <div className="flex flex-wrap md:justify-between items-center mb-2 mt-3">
+                <div className="flex flex-wrap md:flex-row gap-3 z-10">
+                    <DatePicker
+                        selected={startDate}
+                        onChange={(date) => setStartDate(date)}
+                        dateFormat="dd-MMMM-yyyy"
+                        popperPlacement="bottom-start"
+                        className="custom-date-picker"
+                        customInput={<CustomInput />}
+                    />
+                    <LocationList
+                        data={locationData || []}
+                        onSelectLocation={handleLocationSelect}
+                        onSelectNameLocation={handleLocationNameSelect}
+                    />
 
-  //     closeModal();
-  //   } else {
-  //     setError("Please select a valid Excel file.");
-  //   }
-  // };
-
-  const downloadTemplate = () => {
-    // Buat data template
-    const templateData = [["No", "Ticket Number", "License Plate", "InTime"]];
-
-    // Buat workbook dan worksheet
-    const ws = XLSX.utils.aoa_to_sheet(templateData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Template");
-
-    // Konversi workbook ke file Excel
-    const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-
-    // Buat file dan unduh
-    const data = new Blob([excelBuffer], {
-      type: "application/octet-stream",
-    });
-    saveAs(data, "Template.xlsx");
-  };
-
-  const handleRowClick = (row) => {
-    setSelectedRow(row);
-    setOutTime(
-      row.OutTime
-        ? DateTime.fromISO(row.OutTime).toFormat("yyyy-MM-dd'T'HH:mm")
-        : ""
-    );
-    setRemarks(row.Remarks || "");
-    setIsModalOpen(true);
-  };
-
-  const handleModalClose = () => {
-    setIsModalOpen(false);
-    setSelectedRow(null);
-  };
-
-  const handleSave = async () => {
-    setIsLoading(true);
-    try {
-      const newToken = await refreshToken();
-      const decode = jwtDecode(newToken);
-      await apiTable.updateData(
-        outTime,
-        remarks,
-        decode.name,
-        selectedRow.Id,
-        newToken
-      ); // Panggil dari apiTable
-
-      toast.success("Data updated successfully!", {
-        position: "top-right",
-      });
-      await getData(newToken);
-      handleModalClose();
-    } catch (error) {
-      setIsLoading(false);
-      toast.error("An error occurred during update. Please try again.", {
-        position: "top-right",
-      });
-      console.error("Error updating data:", error);
-    }
-  };
-
-  const handleLocationSelect = (locCode) => {
-    setSelectLocation(locCode);
-  };
-  const handleLocationNameSelect = (locName) => {
-    setSelectLocationName(locName);
-  };
-
-  const timeDifferenceFormat = (startDateTime, endDateTime) => {
-    const start = DateTime.fromISO(startDateTime, { zone: "+07:00" });
-    const end = DateTime.fromISO(endDateTime, { zone: "+07:00" });
-
-    const diff = end.diff(start, ["days", "hours", "minutes"]);
-    const { days, hours, minutes } = diff.toObject();
-
-    return `${Math.floor(days)} d, ${Math.floor(hours)} h, ${Math.floor(
-      minutes
-    )} m`;
-  };
-
-  const CustomInput = React.forwardRef(({ value, onClick }, ref) => (
-    <div className="relative">
-      <input
-        type="text"
-        ref={ref}
-        defaultValue={value}
-        onClick={onClick}
-        className="border border-gray-300 text-start text-xs items-center w-40 h-10 pl-8 pr-3 py-1 rounded-md"
-      />
-      <FaRegCalendarAlt className="absolute top-3 left-2 text-gray-500" />
-      <FaAngleDown className="absolute top-3 right-1 text-gray-500" />
-    </div>
-  ));
-  return (
-    <div>
-      <ToastContainer />
-      <div className="flex flex-wrap md:flex-row gap-x-5 gap-y-3 md:gap-3 ">
-        <CardTop title={"Total Transaksi Menginap"} value={0} />
-        <CardTop title={"Total Ceklist Kendaraan"} value={totalCount} />
-        <div className="border border-slate-400 bg-white shadow-md rounded-md w-full h-32 md:w-80 md:h-32 text-start px-3 py-2">
-          <h1 className="text-sm font-medium mb-2 text-gray-400">Status</h1>
-          <hr />
-          <div className="flex justify-between items-center">
-            <div className="flex flex-col items-start gap-1">
-              <p className="text-xl font-semibold mt-3">{inArea}</p>
-              <div className="flex flex-row justify-start items-center gap-3">
-                <div>
-                  <div className="relative w-5 h-5 rounded-full bg-green-100">
-                    <div className="absolute top-[6px] left-[6px] w-2 h-2 rounded-full bg-green-600"></div>
-                  </div>
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={handleSearchChange}
+                        className="border border-slate-300 px-3 py-2 rounded-xl text-sm"
+                        placeholder="Search"
+                    />
                 </div>
-                <p className="text-xs">Menginap</p>
-              </div>
-            </div>
-
-            <div className="h-10 w-px bg-gray-300"></div>
-
-            <div className="flex flex-col items-start gap-1">
-              <p className="text-xl font-semibold mt-3">{0}</p>
-              <div className="flex flex-row justify-start items-center gap-3">
-                <div>
-                  <div className="relative w-5 h-5 rounded-full bg-red-100">
-                    <div className="absolute top-[6px] left-[6px] w-2 h-2 rounded-full bg-red-600"></div>
-                  </div>
+                <div className="flex flex-row gap-3">
+                    <button
+                        className="bg-amber-500 hover:bg-amber-600 text-white font-normal py-2 px-4 rounded-lg whitespace-nowrap text-sm"
+                        onClick={() => setModalGetDataPOST(true)}
+                    >
+                        Get Data POST
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => setModalExport(true)}
+                        className="inline-flex gap-2 justify-center items-center w-full px-4 py-3 font-medium text-gray-700 hover:text-amber-500 focus:outline-none text-sm bg-white border border-gray-300 rounded-lg"
+                    >
+                        <HiOutlineDownload />
+                        <p className="text-xs">Export Data</p>
+                    </button>
                 </div>
-                <p className="text-xs">{"Menginap > 1 hari"}</p>
-              </div>
             </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex flex-wrap md:justify-between items-center mb-2 mt-3">
-        <div className="flex flex-wrap md:flex-row gap-3 z-10">
-          <DatePicker
-            selected={startDate}
-            onChange={(date) => setStartDate(date)}
-            dateFormat="dd-MMMM-yyyy"
-            popperPlacement="bottom-start"
-            className="custom-date-picker"
-            customInput={<CustomInput />}
-          />
-          <LocationList
-            data={locationData}
-            onSelectLocation={handleLocationSelect}
-            onSelectNameLocation={handleLocationNameSelect}
-          />
 
-          <input
-            type="search"
-            value={search}
-            onChange={handleSearchChange}
-            className="border border-slate-300 px-3 py-2 rounded-xl text-sm"
-            placeholder="Search"
-          />
-        </div>
-        <div className="flex flex-row gap-3">
-          {/* <button
-            className="flex flex-row justify-center items-center gap-x-2 text-red-700 hover:text-red-500 cursor-pointer text-sm"
-            onClick={downloadTemplate}
-          >
-            <LuDownloadCloud />
-            <p className="whitespace-nowrap">Download Template</p>
-          </button>
-          <button
-            className="flex flex-row justify-center items-center gap-x-2 text-teal-700 hover:text-teal-500 cursor-pointer text-sm"
-            onClick={openModal}
-          >
-            <LuUploadCloud />
-            <p>Upload</p>
-          </button> */}
-          <button
-            type="button"
-            onClick={handleExport}
-            className="inline-flex gap-2 justify-center items-center w-full px-4 py-3 font-medium text-gray-700 hover:text-amber-500 focus:outline-none text-sm"
-          >
-            <HiOutlineDownload />
-            Export
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto max-h-[56vh] w-full mt-5">
-        <table className="table table-zebra table-xs table-pin-rows table-pin-cols text-xs cursor-pointer">
-          <thead>
-            <tr className="font-semibold p-2">
-              <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">No</th>
-              <th className="bg-slate-100 px-2 py-5">Lokasi</th>
-              <th className="bg-slate-100 px-2 py-5">No Transaksi</th>
-              <th className="bg-slate-100 px-2 py-5">Waktu Masuk</th>
-              <th className="bg-slate-100 px-2 py-5">Plate By System</th>
-              <th className="bg-slate-100 px-2 py-5">No Kendaraan</th>
-              <th className="bg-slate-100 px-2 py-5">Diupdate Oleh</th>
-              <th className="bg-slate-100 px-2 py-5">Tanggal Upload</th>
-              <th className="bg-slate-100 px-2 py-5">Durasi</th>
-              <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!Array.isArray(data) || data.length === 0 ? (
-              <tr className="text-center">
-                <td
-                  colSpan={10}
-                  className="text-center py-5 text-xl font-semibold"
-                >
-                  Data Not Found
-                </td>
-              </tr>
-            ) : (
-              data.map((list, index) => (
-                <tr key={list.Id} onClick={() => handleRowClick(list)}>
-                  <td>{index + 1}</td>
-                  <td>
-                    {list.RefLocation && list.RefLocation.Name
-                      ? list.RefLocation.Name
-                      : "-"}
-                  </td>
-                  <td>{list.TransactionNo ? list.TransactionNo : "-"}</td>
-                  <td>
-                    {list.InTime
-                      ? DateTime.fromISO(list.InTime, {
-                          zone: "+07:00",
-                        }).toFormat("dd MMM yyyy, HH:mm:ss")
-                      : "-"}
-                  </td>
-                  <td>{list.Plateregognizer ? list.Plateregognizer : "-"}</td>
-                  <td>{list.VehiclePlateNo ? list.VehiclePlateNo : "-"}</td>
-                  <td>{list.ModifiedBy ? list.ModifiedBy : "-"}</td>
-                  <td>
-                    {list.UploadedAt
-                      ? DateTime.fromISO(list.UploadedAt, {
-                          zone: "+07:00",
-                        }).toFormat("dd MMM yyyy, HH:mm:ss")
-                      : "-"}
-                  </td>
-                  <td>
-                    {timeDifferenceFormat(list.CreatedAt, list.ModifiedOn)}
-                  </td>
-                  <td>
-                    <div className="flex flex-row justify-start items-center gap-3">
-                      <div>
-                        <div
-                          className={`relative w-5 h-5 rounded-full ${
-                            list.Status === "In Area"
-                              ? "bg-green-100"
-                              : list.Status === "No vehicle"
-                              ? "bg-red-100"
-                              : "bg-blue-100"
-                          }`}
-                        >
-                          <div
-                            className={`absolute top-[6px] left-[6px] w-2 h-2 rounded-full ${
-                              list.Status === "In Area"
-                                ? "bg-green-600"
-                                : list.Status === "No vehicle"
-                                ? "bg-red-600"
-                                : "bg-blue-600"
-                            }`}
-                          ></div>
-                        </div>
-                      </div>
-                      <h1>{list.Status}</h1>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className=" flex items-center justify-between border-t border-gray-200 bg-white py-3  text-xs">
-        <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-          <div className="flex flex-row gap-x-3 items-center justify-center">
-            <p className=" text-gray-700">
-              Showing
-              <span className="font-medium px-1">1</span>
-              to
-              <span className="font-medium px-1">
-                {limit > countData ? countData : limit}
-              </span>
-              of
-              <span className="font-medium px-1">{countData}</span>
-              results
-            </p>
-            <div className="flex flex-row gap-2 justify-start items-center">
-              <select
-                name="limit"
-                value={limit}
-                onChange={handleLimit}
-                className="border border-slate-300 rounded-md p-1 text-xs"
-              >
-                <option value="10">10</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-              </select>
-            </div>
-          </div>
-          <div>
-            <nav aria-label="Page navigation">
-              <ul className="justify-content-center">
-                <ReactPagination
-                  previousLabel={"Prev"}
-                  nextLabel={"Next"}
-                  pageCount={totalPages}
-                  onPageChange={changePage}
-                  containerClassName={
-                    "isolate inline-flex -space-x-px rounded-md shadow-sm "
-                  }
-                  activeClassName={"bg-yellow-500 text-white focus:z-20"}
-                  previousClassName={
-                    "inline-flex items-center rounded-l-md px-4 py-1 text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                  }
-                  nextClassName={
-                    "inline-flex items-center rounded-r-md px-4 py-1 text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0"
-                  }
-                  pageLinkClassName={
-                    "inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 "
-                  }
-                  disabledLinkClassName={"text-gray-400"}
-                />
-              </ul>
-            </nav>
-          </div>
-        </div>
-      </div>
-      {/* <Transition.Root show={isOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-10" onClose={closeModal}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-          </Transition.Child>
-          <div className="fixed inset-0 z-10 overflow-y-auto">
-            <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                enterTo="opacity-100 translate-y-0 sm:scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-                leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              >
-                <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                  <div className="sm:flex sm:items-start">
-                    <div className="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                      <ExclamationIcon
-                        className="h-6 w-6 text-red-600"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                      <Dialog.Title
-                        as="h3"
-                        className="text-lg font-medium leading-6 text-gray-900"
-                      >
-                        Upload Excel File
-                      </Dialog.Title>
-                      <div className="mt-2">
-                        <input
-                          type="file"
-                          accept=".xls, .xlsx"
-                          onChange={handleFileChange}
-                          className="border border-slate-300 px-3 py-2 rounded-xl text-sm"
-                        />
-                        {error && (
-                          <p className="mt-2 text-sm text-red-600">{error}</p>
+            <div className="overflow-x-auto max-h-[56vh] w-full mt-5">
+                <table className="table table-zebra table-xs table-pin-rows table-pin-cols text-xs cursor-pointer">
+                    <thead>
+                        <tr className="font-semibold p-2">
+                            <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">
+                                No
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">Lokasi</th>
+                            <th className="bg-slate-100 px-2 py-5">
+                                Transaction No
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">In Time</th>
+                            <th className="bg-slate-100 px-2 py-5">
+                                Plate POST
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">
+                                Plate Recognize
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">
+                                Plate Manual
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">
+                                Updated By
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">
+                                Upload Date
+                            </th>
+                            <th className="bg-slate-100 px-2 py-5">Duration</th>
+                            <th className="bg-slate-100 px-2 py-5">Category</th>
+                            <th className="bg-slate-100 px-2 py-5 rounded-tr-xl">
+                                Detail
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {!Array.isArray(data) || data.length === 0 ? (
+                            <tr className="text-center">
+                                <td
+                                    colSpan={10}
+                                    className="text-center py-5 text-xl font-semibold"
+                                >
+                                    Data Not Found
+                                </td>
+                            </tr>
+                        ) : (
+                            data.map((list, index) => (
+                                <tr
+                                    key={list.Id}
+                                    onClick={() => handleRowClick(list)}
+                                >
+                                    <td>{index + 1}</td>
+                                    <td>
+                                        {list.RefLocation &&
+                                        list.RefLocation.Name
+                                            ? list.RefLocation.Name
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {list.TransactionNo
+                                            ? list.TransactionNo
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {list.InTime
+                                            ? DateTime.fromISO(list.InTime, {
+                                                  zone: '+07:00',
+                                              }).toFormat(
+                                                  'dd MMM yyyy, HH:mm:ss'
+                                              )
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {list.PlatePOST ? list.PlatePOST : '-'}
+                                    </td>
+                                    <td>
+                                        {list.Plateregognizer
+                                            ? list.Plateregognizer
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {list.VehiclePlateNo
+                                            ? list.VehiclePlateNo
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {list.ModifiedBy
+                                            ? list.ModifiedBy
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {list.UploadedAt
+                                            ? DateTime.fromISO(
+                                                  list.UploadedAt,
+                                                  {
+                                                      zone: '+07:00',
+                                                  }
+                                              ).toFormat(
+                                                  'dd MMM yyyy, HH:mm:ss'
+                                              )
+                                            : '-'}
+                                    </td>
+                                    <td>
+                                        {timeDifferenceFormat(
+                                            list.InTime,
+                                            list.CreatedAt
+                                        )}
+                                    </td>
+                                    <td>
+                                        <div className="flex flex-row justify-start items-center gap-3">
+                                            <div>
+                                                <div
+                                                    className={`relative w-5 h-5 rounded-full ${
+                                                        list.Status ===
+                                                        'In Area'
+                                                            ? 'bg-green-100'
+                                                            : list.Status ===
+                                                              'No vehicle'
+                                                            ? 'bg-red-100'
+                                                            : 'bg-blue-100'
+                                                    }`}
+                                                >
+                                                    <div
+                                                        className={`absolute top-[6px] left-[6px] w-2 h-2 rounded-full ${
+                                                            list.Status ===
+                                                            'In Area'
+                                                                ? 'bg-green-600'
+                                                                : list.Status ===
+                                                                  'No vehicle'
+                                                                ? 'bg-red-600'
+                                                                : 'bg-blue-600'
+                                                        }`}
+                                                    ></div>
+                                                </div>
+                                            </div>
+                                            <h1>{list.Status}</h1>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div className="flex flex-row justify-start items-center gap-3">
+                                            <h1>{list.Remarks}</h1>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
                         )}
-                      </div>
+                    </tbody>
+                </table>
+            </div>
+
+            <div className=" flex items-center justify-between border-t border-gray-200 bg-white py-3  text-xs">
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div className="flex flex-row gap-x-3 items-center justify-center">
+                        <p className=" text-gray-700">
+                            Showing
+                            <span className="font-medium px-1">1</span>
+                            to
+                            <span className="font-medium px-1">
+                                {limit > countData ? countData : limit}
+                            </span>
+                            of
+                            <span className="font-medium px-1">
+                                {countData}
+                            </span>
+                            results
+                        </p>
+                        <div className="flex flex-row gap-2 justify-start items-center">
+                            <select
+                                name="limit"
+                                value={limit}
+                                onChange={handleLimit}
+                                className="border border-slate-300 rounded-md p-1 text-xs"
+                            >
+                                <option value="10">10</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </div>
                     </div>
-                  </div>
-                  <div className="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                    <button
-                      type="button"
-                      className="inline-flex w-full justify-center rounded-md border border-transparent bg-red-600 px-4 py-2 text-base font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 sm:ml-3 sm:w-auto sm:text-sm"
-                      onClick={handleSubmit}
-                    >
-                      Upload
-                    </button>
-                    <button
-                      type="button"
-                      className="mt-3 inline-flex w-full justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-base font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
-                      onClick={closeModal}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
+                    <div>
+                        <nav aria-label="Page navigation">
+                            <ul className="justify-content-center">
+                                <ReactPagination
+                                    previousLabel={'Prev'}
+                                    nextLabel={'Next'}
+                                    pageCount={totalPages}
+                                    onPageChange={changePage}
+                                    containerClassName={
+                                        'isolate inline-flex -space-x-px rounded-md shadow-sm '
+                                    }
+                                    activeClassName={
+                                        'bg-yellow-500 text-white focus:z-20'
+                                    }
+                                    previousClassName={
+                                        'inline-flex items-center rounded-l-md px-4 py-1 text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                                    }
+                                    nextClassName={
+                                        'inline-flex items-center rounded-r-md px-4 py-1 text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0'
+                                    }
+                                    pageLinkClassName={
+                                        'inline-flex items-center px-4 py-2 text-sm font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 '
+                                    }
+                                    disabledLinkClassName={'text-gray-400'}
+                                />
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
             </div>
-          </div>
-        </Dialog>
-      </Transition.Root> */}
 
-      {isLoading && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-5 rounded-md shadow-lg">
-            <div className="flex items-center justify-center mb-3">
-              <ScaleLoader size={150} color={"#333"} loading={true} />
-            </div>
-          </div>
+            {isLoading && (
+                <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white p-5 rounded-md shadow-lg">
+                        <div className="flex items-center justify-center mb-3">
+                            <ScaleLoader
+                                size={150}
+                                color={'#333'}
+                                loading={true}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isModalOpen && selectedRow && (
+                <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-30">
+                    <div className="bg-white p-5 rounded-md shadow-lg">
+                        <h2 className="text-xl font-semibold mb-4">
+                            Update Status Transaction
+                        </h2>
+
+                        <div className="border w-full border-gray-300 rounded-md"></div>
+
+                        <div className="mb-3">
+                            <img
+                                src={
+                                    `http://localhost:3002/${selectedRow.PathPhotoImage}` ===
+                                    ' '
+                                        ? `/notAvailable.png`
+                                        : `http://localhost:3002/${selectedRow.PathPhotoImage}`
+                                }
+                                alt=""
+                                width={150}
+                            />
+                        </div>
+                        <form>
+                            <div className="flex flex-wrap mb-4 gap-x-10">
+                                <div>
+                                    <label className="block text-sm font-semibold">
+                                        Location Code
+                                    </label>
+                                    <p className="text-slate-500">
+                                        {selectedRow.LocationCode}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold">
+                                        Transaction No
+                                    </label>
+                                    <p className="text-slate-500">
+                                        {selectedRow.TransactionNo}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold">
+                                        Vehicle Plate No
+                                    </label>
+                                    <p className="text-slate-500">
+                                        {selectedRow.VehiclePlateNo}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mb-4">
+                                <label className="block text-sm font-medium mb-2">
+                                    Case Category
+                                </label>
+
+                                <Dropwdown
+                                    id={'case-category'}
+                                    name={'category'}
+                                    list={listCategory}
+                                    title={'Pilih category'}
+                                    search={'Cari category'}
+                                    selected={selectedCategory}
+                                    setSelected={setSelectedCategory}
+                                    bottom={false}
+                                />
+                            </div>
+                            {selectedCategory && (
+                                <div className="mb-4">
+                                    <label className="block text-sm font-medium mb-2">
+                                        Case Sub Category
+                                    </label>
+                                    <Dropwdown
+                                        id={'case-remaks'}
+                                        name={'remaks'}
+                                        list={listRemaks}
+                                        title={'Pilih Remaks'}
+                                        search={'Cari Remaks'}
+                                        selected={remarks}
+                                        setSelected={setRemarks}
+                                        bottom={false}
+                                    />
+                                </div>
+                            )}
+                            <div className="flex justify-end">
+                                <button
+                                    type="button"
+                                    className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
+                                    onClick={() => handleSave(selectedRow.Id)}
+                                >
+                                    Save
+                                </button>
+                                <button
+                                    type="button"
+                                    className="bg-gray-300 text-black px-4 py-2 rounded"
+                                    onClick={handleModalClose}
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {modalGetDataPOST && (
+                <div className="fixed inset-0 z-20 flex items-center justify-center bg-gray-900 bg-opacity-50">
+                    <div className="bg-white w-1/3 rounded-lg min-h-32 px-2 py-3">
+                        <div className="flex flex-col justify-start items-start">
+                            <h1 className="text-base font-semibold">
+                                Get Data POST
+                            </h1>
+                            <p className="px-2 py-1 rounded bg-cyan-100 text-xs text-cyan-700">
+                                Default transaction date is today
+                            </p>
+                        </div>
+                        <div className="border border-b w-full border-slate-3200 mt-2"></div>
+                        <div className="flex justify-between items-center w-full mt-2">
+                            <div className="flex flex-col justify-start items-start space-y-2">
+                                <p className="text-sm text-slate-400">
+                                    Location
+                                </p>
+                                <LocationList
+                                    data={locationData || []}
+                                    onSelectLocation={handleLocationSelect}
+                                    onSelectNameLocation={
+                                        handleLocationNameSelect
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="border border-t border-slate-200 w-full my-4"></div>
+
+                        <div className="flex flex-row justify-end items-end w-full space-x-2">
+                            <button
+                                onClick={handleGetDataPOST}
+                                className="text-sm text-white bg-green-500 rounded-lg shadow-md shadow-green-400 hover:bg-opacity-90 hover:shadow-none px-4 py-2"
+                            >
+                                Get Data
+                            </button>
+                            <button className="text-sm text-red-500 bg-white border border-red-500 rounded-lg shadow-md shadow-red-400 hover:bg-red-500 hover:text-white hover:shadow-none px-4 py-2">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {modalExport && (
+                <div className="fixed inset-0 z-20 flex items-center justify-center bg-gray-900 bg-opacity-50">
+                    <div className="bg-white w-1/3 rounded-lg min-h-32 p-3">
+                        <div className="flex flex-col justify-start items-start">
+                            <h1 className="text-base font-semibold">
+                                Export Data
+                            </h1>
+                        </div>
+                        <div className="border border-b w-full border-slate-3200 mt-2"></div>
+                        <div className="flex flex-wrap sm:flex-nowrap justify-between items-center w-full mt-2">
+                            <div className="flex flex-col justify-start items-start space-y-2">
+                                <p className="text-sm text-slate-400">
+                                    Transaction Date
+                                </p>
+                                <DatePicker
+                                    selected={startDateExport}
+                                    onChange={(date) =>
+                                        setStartDateExport(date)
+                                    }
+                                    dateFormat="dd-MMMM-yyyy"
+                                    popperPlacement="bottom-start"
+                                    className="custom-date-picker"
+                                    customInput={<CustomInput />}
+                                />
+                            </div>
+                            <div className="flex flex-col justify-start items-start space-y-2">
+                                <p className="text-sm text-slate-400">
+                                    Location
+                                </p>
+                                <LocationList
+                                    data={locationData || []}
+                                    onSelectLocation={handleLocationSelect}
+                                    onSelectNameLocation={
+                                        handleLocationNameSelect
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="border border-t border-slate-200 w-full my-4"></div>
+
+                        <div className="flex flex-row justify-end items-end w-full space-x-2">
+                            <button
+                                onClick={handleExport}
+                                className="text-sm text-white bg-green-500 rounded-lg shadow-md shadow-green-400 hover:bg-opacity-90 hover:shadow-none px-4 py-2"
+                            >
+                                Export Data
+                            </button>
+                            <button
+                                onClick={handleCloseModalExport}
+                                className="text-sm text-red-500 bg-white border border-red-500 rounded-lg shadow-md shadow-red-400 hover:bg-red-500 hover:text-white hover:shadow-none px-4 py-2"
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {loading && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-50">
+                    <div className="bg-white w-1/3 rounded-lg min-h-32 px-4 py-6">
+                        <h1 className="text-lg font-semibold text-center">
+                            Loading...
+                        </h1>
+                        <div className="relative w-full bg-gray-200 h-2 rounded mt-4">
+                            <div
+                                className="absolute top-0 left-0 h-2 bg-green-500 rounded"
+                                style={{
+                                    width: `${progress}%`,
+                                    transition: 'width 0.2s',
+                                }}
+                            ></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showToast && (
+                <div className="toast toast-top toast-end">
+                    <div className="bg-emerald-500 p-3 rounded-lg bg-opacity-90">
+                        <span>{message}</span>
+                    </div>
+                </div>
+            )}
+            {error && (
+                <div className="toast toast-top toast-end">
+                    <div className="bg-red-500 p-3 rounded-lg bg-opacity-90">
+                        <span>{message}</span>
+                    </div>
+                </div>
+            )}
         </div>
-      )}
-
-      {isModalOpen && selectedRow && (
-        <div className="fixed top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
-          <div className="bg-white p-5 rounded-md shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">
-              Input OutTime and Remarks
-            </h2>
-            <div className="mb-3">
-              <img
-                src={
-                  `https://dev-valetapi.skyparking.onlin${selectedRow.PathPhotoImage}` ===
-                  " "
-                    ? `/notAvailable.png`
-                    : `https://dev-valetapi.skyparking.onlin${selectedRow.PathPhotoImage}`
-                }
-                alt=""
-                width={150}
-              />
-            </div>
-            <form>
-              <div className="flex flex-wrap mb-4 gap-x-10">
-                <div>
-                  <label className="block text-sm font-semibold">
-                    Location Code
-                  </label>
-                  <p className="text-slate-500">{selectedRow.LocationCode}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold">
-                    Transaction No
-                  </label>
-                  <p className="text-slate-500">{selectedRow.TransactionNo}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold">
-                    Vehicle Plate No
-                  </label>
-                  <p className="text-slate-500">{selectedRow.VehiclePlateNo}</p>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  OutTime
-                </label>
-                <input
-                  type="datetime-local"
-                  className="border border-gray-300 p-2 w-full rounded"
-                  value={outTime}
-                  onChange={(e) => setOutTime(e.target.value)}
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">
-                  Remarks
-                </label>
-                <input
-                  type="text"
-                  className="border border-gray-300 p-2 w-full rounded"
-                  value={remarks}
-                  onChange={(e) => setRemarks(e.target.value)}
-                />
-              </div>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  className="bg-blue-500 text-white px-4 py-2 rounded mr-2"
-                  onClick={handleSave}
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  className="bg-gray-300 text-black px-4 py-2 rounded"
-                  onClick={handleModalClose}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-    </div>
-  );
+    );
 }
