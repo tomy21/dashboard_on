@@ -10,7 +10,7 @@ const CustomInput = React.forwardRef(({ value, onClick, onChange }, ref) => (
             value={value} // Bind the value prop to the input value
             onClick={onClick} // Bind onClick handler
             onChange={onChange} // Bind onChange handler for changes in the input
-            className="border border-gray-300 text-start text-xs items-center w-44 h-10 pl-8 pr-3 py-1 rounded-md"
+            className="border border-gray-300 text-start text-xs items-center md:w-44 h-10 pl-8 pr-3 py-1 rounded-md w-full"
         />
         <FaRegCalendarAlt className="absolute top-3 left-2 text-gray-500" />
     </div>

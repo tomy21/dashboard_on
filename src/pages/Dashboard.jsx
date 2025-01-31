@@ -30,7 +30,6 @@ export default function Dashboard() {
         setLoading(true);
         try {
             const response = await DashboardService.getValue(formattedDate);
-            console.log(response.data);
             setDataSummary(response.data);
         } catch (error) {
             console.log(error);
@@ -57,7 +56,6 @@ export default function Dashboard() {
         setLoading(true);
         try {
             const response = await DashboardService.getTopStatus(formattedDate);
-            console.log(response.data);
             setTopStatus(response.data);
         } catch (error) {
             console.log(error);
@@ -88,35 +86,36 @@ export default function Dashboard() {
                         className="custom-date-picker"
                         customInput={<CustomInput />}
                     />
-                    <div className="flex flex-wrap justify-between items-center md:flex-row gap-7 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mt-4">
                         <CardTop
-                            title={'Transaksi POST'}
+                            title="Transaksi POST"
                             value={dataSummary?.transaksiPOST ?? 0}
                         />
                         <CardTop
-                            title={'Ceklist Kendaraan'}
+                            title="Ceklist Kendaraan"
                             value={dataSummary?.totalChecklist ?? 0}
                         />
                         <CardTop
-                            title={'Inap'}
+                            title="Inap"
                             value={dataSummary?.totalInap ?? 0}
                         />
                         <CardTop
-                            title={'Lost Ticket'}
+                            title="Lost Ticket"
                             value={dataSummary?.totalLostTicket ?? 0}
                         />
+                        <CardTop title="IT" value={dataSummary?.totalIT ?? 0} />
                         <CardTop
-                            title={'IT'}
-                            value={dataSummary?.totalIT ?? 0}
+                            title="Tidak Teridentifikasi"
+                            value={dataSummary?.totalTidakTeridentifikasi ?? 0}
                         />
                         <CardTop
-                            title={'Tidak Teridentifikasi'}
-                            value={dataSummary?.totalTidakTeridentifikasi ?? 0}
+                            title="Lain-lain"
+                            value={dataSummary?.totalLainLain ?? 0}
                         />
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center max-w-full mt-3 space-x-2">
+                <div className="flex flex-wrap md:flex-nowrap justify-between items-center max-w-full mt-3 gap-2">
                     <div className="flex-[2] bg-white rounded-md p-2 shadow-lg border border-slate-100">
                         <BarChart />
                     </div>
@@ -125,7 +124,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                <div className="flex justify-between items-start max-w-full mt-3 space-x-2 mb-10">
+                <div className="flex flex-wrap md:flex-nowrap justify-between items-start max-w-full mt-3 gap-2 mb-10">
                     <div className="flex-[2] bg-white rounded shadow-lg min-h-[50vh]">
                         <div className="flex justify-between items-center px-3 py-2">
                             <h1 className="text-lg px-2 py-1 font-semibold mb-3">

@@ -38,7 +38,7 @@ export default function LocationList({
             defaultValue={'selected'}
             onChange={handleChange}
             options={options}
-            className="w-[60%] md:min-w-[20vw] md:max-w-[20vw] sm:min-w-[20vw] text-xs text-black z-10 border-slate-300 text-start"
+            className="w-full md:min-w-[20vw] md:max-w-[20vw] sm:min-w-[20vw] text-xs text-black border-slate-300 text-start"
         />
     );
 }

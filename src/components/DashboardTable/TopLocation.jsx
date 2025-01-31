@@ -5,22 +5,22 @@ import { ScaleLoader } from 'react-spinners';
 
 export default function TopLocation({ isLoading, data = [] }) {
     return (
-        <table className="w-full bg-white rounded-lg">
+        <table className="w-full bg-white rounded-lg table table-zebra">
             <thead>
-                <tr className="bg-gray-100 border-b">
-                    <th className="text-left text-sm text-gray-600 px-4 py-3">
+                <tr className="bg-gray-100 border-b-2 border-black">
+                    <th className="text-left text-sm text-gray-600 px-4 py-4">
                         No
                     </th>
-                    <th className="text-left text-sm text-gray-600 px-4 py-3">
+                    <th className="text-left text-sm text-gray-600 px-4 py-4">
                         Location
                     </th>
-                    <th className="text-left text-sm text-gray-600 px-4 py-3">
+                    <th className="text-left text-sm text-gray-600 px-4 py-4">
                         Vendor
                     </th>
-                    <th className="text-left text-sm text-gray-600 px-4 py-3">
+                    <th className="text-left text-sm text-gray-600 px-4 py-4">
                         Total ON
                     </th>
-                    <th className="text-left text-sm text-gray-600 px-4 py-3"></th>
+                    <th className="text-left text-sm text-gray-600 px-4 py-4"></th>
                 </tr>
             </thead>
             <tbody>

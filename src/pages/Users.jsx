@@ -359,7 +359,7 @@ export default function Users() {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap md:justify-between items-center mb-2 mt-3">
+                <div className="flex flex-wrap justify-between items-center mb-2 mt-3">
                     <div className="flex flex-wrap md:flex-row gap-3 z-10">
                         <input
                             type="search"
@@ -381,7 +381,7 @@ export default function Users() {
 
                 <div className="bg-white rounded-md mx-auto w-full h-[76vh]">
                     <div className="overflow-x-auto max-h-[56vh] w-full mt-2">
-                        <table className="table table-zebra table-xs table-pin-rows table-pin-cols text-xs cursor-pointer">
+                        <table className="table table-zebra table-xs table-pin-rows text-xs cursor-pointer">
                             <thead>
                                 <tr className="font-semibold p-2 border-b-2 border-black ">
                                     <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">

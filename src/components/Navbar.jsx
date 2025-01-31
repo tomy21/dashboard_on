@@ -6,6 +6,7 @@ import Cookies from 'js-cookie';
 import { apiAuth, apiUsers } from '../api/apiUsers';
 import { jwtDecode } from 'jwt-decode';
 import { LuFileCheck2, LuLayoutDashboard, LuUsers } from 'react-icons/lu';
+import { HiMenu, HiX } from 'react-icons/hi';
 
 export default function Navbar() {
     const [name, setName] = useState('');
@@ -13,6 +14,7 @@ export default function Navbar() {
     const navigate = useNavigate();
     const location = useLocation();
     const [loading, setLoading] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
 
     const menuItems = [
         {
@@ -65,50 +67,53 @@ export default function Navbar() {
     }
 
     return (
-        <div className="bg-base-100">
-            <div className="navbar mx-auto flex justify-between items-center py-3 min-w-screen">
-                <div className="flex flex-row space-x-10 justify-end items-end">
-                    <div className="flex">
-                        <div className="flex flex-row items-end justify-start space-x-2">
-                            <img
-                                src={'/logo.png'}
-                                width={40}
-                                height={40}
-                                alt="Logo Sky"
-                            />
-                            <h1 className="text-xl font-semibold">
-                                SKY Parking
-                            </h1>
-                        </div>
-                    </div>
-                    <div className="flex-auto flex-row">
-                        <ul className="flex flex-row gap-2">
-                            {menuItems.map((list) => (
-                                <li
-                                    key={list.title}
-                                    className={`hover:bg-slate-100 py-1 px-2 rounded-md ${
-                                        location.pathname === list.path
-                                            ? 'bg-slate-100'
-                                            : ''
-                                    }`}
-                                >
-                                    <Link
-                                        to={list.path}
-                                        className="flex flex-row gap-2 justify-center items-center"
-                                    >
-                                        {list.icon}
-                                        {list.title}
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
+        <div className="bg-white">
+            <div className="navbar mx-auto flex justify-between items-center py-3 px-5 md:px-10">
+                {/* Logo & Brand */}
+                <div className="flex items-end gap-3">
+                    <img
+                        src="/logo.png"
+                        width={50}
+                        height={50}
+                        alt="Logo Sky"
+                    />
                 </div>
 
-                <div className="flex flex-row justify-center items-center gap-x-3">
-                    <div className="flex flex-col justify-end items-end">
+                {/* Desktop Menu */}
+                <ul className="hidden md:flex flex-row gap-4">
+                    {menuItems.map((list) => (
+                        <li
+                            key={list.title}
+                            className={`py-2 px-3 rounded-md ${
+                                location.pathname === list.path
+                                    ? 'bg-gradient-to-br from-amber-500 to-amber-400 border-gradient-to-br text-white'
+                                    : 'hover:bg-gradient-to-br from-amber-500 to-amber-400 border-gradient-to-br hover:text-white'
+                            }`}
+                        >
+                            <Link
+                                to={list.path}
+                                className="flex items-center gap-2"
+                            >
+                                {list.icon}
+                                {list.title}
+                            </Link>
+                        </li>
+                    ))}
+                </ul>
+
+                {/* Mobile Menu Button */}
+                <button
+                    className="md:hidden text-2xl"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    {isOpen ? <HiX /> : <HiMenu />}
+                </button>
+
+                {/* Profile Section */}
+                <div className="hidden md:flex items-center gap-3">
+                    <div className="text-right">
                         <h1 className="text-sm font-semibold">{name}</h1>
-                        <h1 className="text-xs text-slate-400">{email}</h1>
+                        <h1 className="text-xs text-gray-400">{email}</h1>
                     </div>
 
                     <div className="dropdown dropdown-end">
@@ -119,8 +124,8 @@ export default function Navbar() {
                         >
                             <div className="w-10 rounded-full">
                                 <img
-                                    alt="Poto profile"
-                                    src={'/logo.png'}
+                                    src="/logo.png"
+                                    alt="Profile"
                                     width={40}
                                     height={40}
                                 />
@@ -128,21 +133,47 @@ export default function Navbar() {
                         </div>
                         <ul
                             tabIndex={0}
-                            className="menu menu-sm dropdown-content mt-3 z-20 p-2 shadow bg-base-100 rounded-box w-52"
+                            className="menu menu-sm dropdown-content mt-3 z-20 p-2 shadow bg-white rounded-box w-52"
                         >
                             <li>
                                 <Link
-                                    className="justify-between"
                                     onClick={handleLogout}
+                                    className="flex items-center gap-2"
                                 >
-                                    Logout
-                                    <CiLogout />
+                                    Logout <CiLogout />
                                 </Link>
                             </li>
                         </ul>
                     </div>
                 </div>
             </div>
+
+            {/* Mobile Menu */}
+            {isOpen && (
+                <div className="md:hidden bg-white shadow-md p-3">
+                    <ul className="flex flex-col gap-2">
+                        {menuItems.map((list) => (
+                            <li
+                                key={list.title}
+                                className={`py-2 px-3 rounded-md ${
+                                    location.pathname === list.path
+                                        ? 'bg-gray-100'
+                                        : 'hover:bg-gray-100'
+                                }`}
+                            >
+                                <Link
+                                    to={list.path}
+                                    className="flex items-center gap-2"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    {list.icon}
+                                    {list.title}
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
         </div>
     );
 }

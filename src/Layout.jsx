@@ -11,7 +11,7 @@ export default function Layout() {
             <main className="flex-1 overflow-auto px-6">
                 <Outlet />
             </main>
-            <footer className="bg-white shadow-md px-6 py-4">
+            <footer className="bg-white shadow-md px-6 py-4 mt-2">
                 <p className="text-sm text-gray-600">
                     &copy; 2024 PT Sky Parking Utama. All rights reserved.
                 </p>

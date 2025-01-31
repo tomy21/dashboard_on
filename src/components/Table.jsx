@@ -311,14 +311,15 @@ export default function Table() {
         <div>
             <ToastContainer />
 
-            <div className="flex flex-wrap md:justify-between items-center mb-2 mt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center mb-2 mt-3">
+                {/* Bagian Filter */}
                 <div className="flex flex-wrap md:flex-row gap-3 z-10">
                     <DatePicker
                         selected={startDate}
                         onChange={(date) => setStartDate(date)}
                         dateFormat="dd-MMMM-yyyy"
                         popperPlacement="bottom-start"
-                        className="custom-date-picker"
+                        className="custom-date-picker w-full md:w-auto"
                         customInput={<CustomInput />}
                     />
                     <LocationList
@@ -326,18 +327,19 @@ export default function Table() {
                         onSelectLocation={handleLocationSelect}
                         onSelectNameLocation={handleLocationNameSelect}
                     />
-
                     <input
                         type="search"
                         value={search}
                         onChange={handleSearchChange}
-                        className="border border-slate-300 px-3 py-2 rounded-xl text-sm"
+                        className="border border-slate-300 px-3 py-2 rounded-xl text-sm w-full md:w-auto"
                         placeholder="Search"
                     />
                 </div>
-                <div className="flex flex-row gap-3">
+
+                {/* Bagian Tombol Aksi */}
+                <div className="flex flex-wrap gap-3 justify-start md:justify-end">
                     <button
-                        className="bg-amber-500 hover:bg-amber-600 text-white font-normal py-2 px-4 rounded-lg whitespace-nowrap text-sm"
+                        className="bg-amber-500 hover:bg-amber-600 text-white font-normal py-2 px-4 rounded-lg text-sm w-full md:w-auto"
                         onClick={() => setModalGetDataPOST(true)}
                     >
                         Get Data POST
@@ -345,7 +347,7 @@ export default function Table() {
                     <button
                         type="button"
                         onClick={() => setModalExport(true)}
-                        className="inline-flex gap-2 justify-center items-center w-full px-4 py-3 font-medium text-gray-700 hover:text-amber-500 focus:outline-none text-sm bg-white border border-gray-300 rounded-lg"
+                        className="inline-flex gap-2 justify-center items-center w-full md:w-auto px-4 py-3 font-medium text-gray-700 hover:text-amber-500 focus:outline-none text-sm bg-white border border-gray-300 rounded-lg"
                     >
                         <HiOutlineDownload />
                         <p className="text-xs">Export Data</p>
@@ -353,8 +355,8 @@ export default function Table() {
                 </div>
             </div>
 
-            <div className="overflow-x-auto max-h-[56vh] w-full mt-5">
-                <table className="table table-zebra table-xs table-pin-rows table-pin-cols text-xs cursor-pointer">
+            <div className="overflow-x-auto overflow-y-auto max-h-[56vh] w-full mt-5">
+                <table className="table table-zebra table-xs table-pin-rows text-xs cursor-pointer">
                     <thead>
                         <tr className="font-semibold p-2">
                             <th className="bg-slate-100 px-2 py-5 rounded-tl-xl">
@@ -391,7 +393,7 @@ export default function Table() {
                         {!Array.isArray(data) || data.length === 0 ? (
                             <tr className="text-center">
                                 <td
-                                    colSpan={10}
+                                    colSpan={12}
                                     className="text-center py-5 text-xl font-semibold"
                                 >
                                     Data Not Found
